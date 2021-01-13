@@ -7,6 +7,8 @@
 
 extern crate objc;
 
+mod prelude;
+mod shader;
 mod shader_prelude;
 
 use cocoa::{appkit::NSView, base::id as cocoa_id};
@@ -200,6 +202,10 @@ fn main() {
             })();
         });
     });
+    #[allow(unreachable_code)]
+    {
+        let _ = shader::pixel_color(prelude::Float2 { x: 0.0, y: 0.0 });
+    }
 }
 
 fn prepare_pipeline_state(
