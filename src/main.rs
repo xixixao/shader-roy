@@ -7,6 +7,7 @@
 
 extern crate objc;
 
+mod parser;
 mod prelude;
 mod shader;
 mod shader_prelude;
@@ -122,12 +123,19 @@ fn main() {
                         window.request_redraw();
                     }
                     Event::RedrawRequested(_) => {
-                        let shader_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                            .join("src/shader.metal");
-                        let shader = std::fs::read_to_string(shader_path)?;
-
+                        let root_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                        let shader_path = root_path.join("src/shader.metal");
+                        let mut shader = std::fs::read_to_string(shader_path)?;
+                        {
+                            let impl_path = root_path.join("src/shader.rs");
+                            let implementation_rust = std::fs::read_to_string(impl_path)?;
+                            let implementation = parser::transpile(&implementation_rust)?;
+                            shader.push_str(&implementation);
+                        }
+                        eprintln!("definitely here");
                         let library =
                             device.new_library_with_source(&shader, &CompileOptions::new())?;
+                        eprintln!("not here");
 
                         let drawable = layer.next_drawable().ok_or("No drawable")?;
                         let clear_rect_pipeline_state = prepare_pipeline_state(
@@ -204,7 +212,10 @@ fn main() {
     });
     #[allow(unreachable_code)]
     {
-        let _ = shader::pixel_color(prelude::Float2 { x: 0.0, y: 0.0 });
+        let _ = shader::pixel_color(
+            prelude::float2 { x: 0.0, y: 0.0 },
+            prelude::float2 { x: 0.0, y: 0.0 },
+        );
     }
 }
 
@@ -214,8 +225,10 @@ fn prepare_pipeline_state(
     vertex_shader: &str,
     fragment_shader: &str,
 ) -> Result<RenderPipelineState, Box<dyn std::error::Error>> {
+    eprintln!("Do I get here");
     let vert = library.get_function(vertex_shader, None)?;
     let frag = library.get_function(fragment_shader, None)?;
+    eprintln!("Do I get here? {:?}", frag);
 
     let pipeline_state_descriptor = RenderPipelineDescriptor::new();
     pipeline_state_descriptor.set_vertex_function(Some(&vert));

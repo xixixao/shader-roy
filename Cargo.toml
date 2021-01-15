@@ -11,3 +11,6 @@ metal = { git = "https://github.com/gfx-rs/metal-rs" }
 objc = { version = "0.2.4", features = ["objc_exception"] }
 winit = "0.24.0"
 cocoa = "0.24.0"
+syn = "1.0.58"
+quote = "1.0.8"
+anyhow = "1.0.38"

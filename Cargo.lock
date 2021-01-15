@@ -20,6 +20,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afddf7f520a80dbf76e6f50a35bca42a2331ef227a28b3b6dc5c2e2338d114b1"
+
+[[package]]
 name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -336,9 +342,9 @@ checksum = "89203f3fba0a3795506acaad8ebce3c80c0af93f994d5a1d7a0b1eeb23271929"
 
 [[package]]
 name = "libloading"
-version = "0.6.6"
+version = "0.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9367bdfa836b7e3cf895867f7a570283444da90562980ec2263d6e1569b16bc"
+checksum = "351a32417a12d5f7e82c368a66781e307834dae04c6ce0cd4456d52989229883"
 dependencies = [
  "cfg-if 1.0.0",
  "winapi 0.3.9",
@@ -395,7 +401,7 @@ dependencies = [
 [[package]]
 name = "metal"
 version = "0.20.1"
-source = "git+https://github.com/gfx-rs/metal-rs#ba08f5f98c70ab941020b8997936c9c75363b9aa"
+source = "git+https://github.com/gfx-rs/metal-rs#27bd31c6e7beb470a8a5bc88007399e39df19486"
 dependencies = [
  "bitflags",
  "block",
@@ -409,9 +415,12 @@ dependencies = [
 name = "metal-hot-reload"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "cocoa",
  "metal",
  "objc",
+ "quote",
+ "syn",
  "winit",
 ]
 

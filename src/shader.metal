@@ -83,14 +83,24 @@ float2 len(float2 p) {
     return sqrt(p.x*p.x + p.y*p.y);
 }
 
+float4 pixel_color(float2 coordinates);
+
 fragment float4 clear_rect_fragment(
     ColorInOut in [[stage_in]],
     constant Size &size [[ buffer(0) ]]
 )
 {
-    float4 p_abs_4 = in.position;
-    float2 p_abs = float2(p_abs_4.x, p_abs_4.y);
-    float2 s = float2(size.width, size.height);
-    float2 p = (p_abs - s / 2.0) / s;
-    return float4(smoothstep(0.1, 0.12, len(p)), 0, 1.0);
-};
+    auto p_abs_4 = in.position;
+    return pixel_color(
+        float2(p_abs_4.x, p_abs_4.y),
+        float2(size.width, size.height)
+    );
+    //float2 p_abs = float2(p_abs_4.x, p_abs_4.y);
+    //float2 s = float2(size.width, size.height);
+    //float2 p = (p_abs - s / 2.0) / s;
+    //return float4(smoothstep(0.1, 0.12, len(p)), 0, 1.0);
+}
+
+//float4 pixel_color (float2 coordinates) {
+//  return float4 (coordinates . x , coordinates . y , 0.0 , 1.0);
+//}
