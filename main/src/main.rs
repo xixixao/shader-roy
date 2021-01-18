@@ -131,15 +131,17 @@ fn main() {
                         {
                             let impl_path = root_path.join("src/shader.rs");
                             let implementation_rust = std::fs::read_to_string(impl_path)?;
-                            let implementation = parser::transpile(&implementation_rust)?;
+                            let implementation =
+                                parser::transpile_rust_to_msl(&implementation_rust)?;
                             shader.push_str(&implementation);
                             if compiled != Some(implementation.clone()) {
                                 println!("{}", implementation);
                                 compiled = Some(implementation);
                             }
                         }
-                        let library =
-                            device.new_library_with_source(&shader, &CompileOptions::new())?;
+                        let library = device
+                            .new_library_with_source(&shader, &CompileOptions::new())
+                            .map_err(|err_message| err_message.replace("\\n", "\n"))?;
 
                         let drawable = layer.next_drawable().ok_or("No drawable")?;
                         let clear_rect_pipeline_state = prepare_pipeline_state(
@@ -213,7 +215,7 @@ fn main() {
                 Ok(())
             })();
             if let Err(err) = res {
-                let message = format!("{:?}", err);
+                let message = format!("{}", err);
                 if run_error != Some(message.clone()) {
                     println!("{}", message);
                 }
@@ -221,11 +223,12 @@ fn main() {
             }
         });
     });
+    // Validate API
     #[allow(unreachable_code)]
     {
         let _ = shader::pixel_color(
-            prelude::float2 { x: 0.0, y: 0.0 },
-            prelude::float2 { x: 0.0, y: 0.0 },
+            prelude::Float2 { x: 0.0, y: 0.0 },
+            prelude::Float2 { x: 0.0, y: 0.0 },
         );
     }
 }

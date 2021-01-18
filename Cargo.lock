@@ -419,6 +419,7 @@ dependencies = [
  "cocoa",
  "metal",
  "objc",
+ "proc-macro2",
  "quote",
  "syn",
  "winit",
