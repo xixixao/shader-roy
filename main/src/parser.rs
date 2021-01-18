@@ -9,71 +9,90 @@ fn parse(s: &str) -> Result<syn::File> {
 }
 
 fn print(file: syn::File) -> Result<String> {
-  Ok(
-    file
-      .items
-      .iter()
-      .map(|item| {
-        Ok(match item {
-          syn::Item::Use(_) => None,
-          syn::Item::Fn(fun) => Some(format!(
-            "{} {} ({}) {{\n  {}\n}}",
-            match &fun.sig.output {
-              syn::ReturnType::Default => "void".to_string(),
-              syn::ReturnType::Type(_, x) => cp(x),
-            },
-            fun.sig.ident,
-            fun
-              .sig
-              .inputs
-              .iter()
-              .map(|param| Ok(match param {
-                syn::FnArg::Typed(syn::PatType { ty, pat, .. }) =>
-                  format!("{} {}", cp(ty), cp(pat)),
+  let functions = file
+    .items
+    .iter()
+    .map(|item| {
+      Ok(match item {
+        syn::Item::Use(_) => None,
+        syn::Item::Fn(fun) => Some((
+          match &fun.sig.output {
+            syn::ReturnType::Default => "void".to_string(),
+            syn::ReturnType::Type(_, x) => cp(x),
+          },
+          cp(&fun.sig.ident),
+          fun
+            .sig
+            .inputs
+            .iter()
+            .map(|param| {
+              Ok(match param {
+                syn::FnArg::Typed(syn::PatType { ty, pat, .. }) => {
+                  format!("{} {}", cp(ty), cp(pat))
+                }
                 _ => anyhow::bail!("Unsupported argument type"),
-              }))
-              .collect::<Result<Vec<_>>>()?
-              .join(", "),
-            {
-              &fun
-                .block
-                .stmts
-                .iter()
-                .map(|statement| {
-                  Ok(match statement {
-                    syn::Stmt::Expr(x) => format!("return {};", cp(&x)),
-                    syn::Stmt::Local(x) => match &x.pat {
-                      syn::Pat::Type(syn::PatType { ty, pat, .. }) => {
-                        format!(
-                          "{} {} {};",
-                          cp(&ty),
-                          cp(&pat),
-                          match &x.init {
-                            Some((_, expression)) => format!("= {}", cp(&expression)),
-                            None => "".to_string(),
-                          }
-                        )
+              })
+            })
+            .collect::<Result<Vec<_>>>()?
+            .join(", "),
+          {
+            fun
+              .block
+              .stmts
+              .iter()
+              .map(|statement| {
+                Ok(match statement {
+                  syn::Stmt::Expr(x) => format!("return {};", cp(x)),
+                  syn::Stmt::Local(x) => format!(
+                    "{} {} {};",
+                    match &x.pat {
+                      syn::Pat::Type(syn::PatType { ty, .. }) => {
+                        cp(ty)
                       }
-                      _ => anyhow::bail!("Assignment is missing type"),
+                      _ => "auto".to_string(),
                     },
-                    _ => cp(&statement),
-                  })
+                    match match &x.pat {
+                      syn::Pat::Type(syn::PatType { pat, .. }) => pat,
+                      pat => pat,
+                    } {
+                      syn::Pat::Ident(syn::PatIdent { ident, .. }) => cp(ident),
+                      _ => anyhow::bail!("Unsupported assignment pattern"),
+                    },
+                    match &x.init {
+                      Some((_, expression)) => format!("= {}", cp(expression)),
+                      None => "".to_string(),
+                    },
+                  ),
+                  _ => cp(statement),
                 })
-                .collect::<Result<Vec<_>>>()?
-                .join("\n  ")
-            },
-          )),
-          x => Some(pp(x)),
-        })
+              })
+              .collect::<Result<Vec<_>>>()?
+              .join("\n  ")
+          },
+        )),
+        _ => None,
       })
-      .collect::<Result<Vec<_>>>()?
-      .into_iter()
-      .filter_map(|x| x)
+    })
+    .collect::<Result<Vec<_>>>()?
+    .into_iter()
+    .filter_map(|x| x)
+    .collect::<Vec<_>>();
+  let function_declarations = functions
+    .iter()
+    .map(|(ret_type, name, params, _)| format!("{} {} ({});", ret_type, name, params));
+  let function_definitions = functions.iter().map(|(ret_type, name, params, body)| {
+    format!("{} {} ({}) {{\n  {}\n}}", ret_type, name, params, body)
+  });
+
+  Ok(
+    function_declarations
+      .chain(function_definitions)
       .collect::<Vec<_>>()
-      .join("\n"),
+      .join("\n\n"),
   )
 }
 
+#[allow(dead_code)]
 fn pp<T>(x: T) -> String
 where
   T: std::fmt::Debug,

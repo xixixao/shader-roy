@@ -83,7 +83,7 @@ float2 len(float2 p) {
     return sqrt(p.x*p.x + p.y*p.y);
 }
 
-float4 pixel_color(float2 coordinates);
+float4 pixel_color(float2 coordinates, float2 size);
 
 fragment float4 clear_rect_fragment(
     ColorInOut in [[stage_in]],

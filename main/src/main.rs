@@ -102,10 +102,12 @@ fn main() {
     );
 
     let command_queue = device.new_command_queue();
+    let mut compiled: Option<String> = None;
+    let mut run_error: Option<String> = None;
 
     events_loop.run(move |event, _, control_flow| {
         autoreleasepool(|| {
-            let _ = (|| -> Result<(), Box<dyn std::error::Error>> {
+            let res = (|| -> Result<(), Box<dyn std::error::Error>> {
                 *control_flow = ControlFlow::Poll;
 
                 match event {
@@ -131,11 +133,13 @@ fn main() {
                             let implementation_rust = std::fs::read_to_string(impl_path)?;
                             let implementation = parser::transpile(&implementation_rust)?;
                             shader.push_str(&implementation);
+                            if compiled != Some(implementation.clone()) {
+                                println!("{}", implementation);
+                                compiled = Some(implementation);
+                            }
                         }
-                        eprintln!("definitely here");
                         let library =
                             device.new_library_with_source(&shader, &CompileOptions::new())?;
-                        eprintln!("not here");
 
                         let drawable = layer.next_drawable().ok_or("No drawable")?;
                         let clear_rect_pipeline_state = prepare_pipeline_state(
@@ -208,6 +212,13 @@ fn main() {
                 };
                 Ok(())
             })();
+            if let Err(err) = res {
+                let message = format!("{:?}", err);
+                if run_error != Some(message.clone()) {
+                    println!("{}", message);
+                }
+                run_error = Some(message);
+            }
         });
     });
     #[allow(unreachable_code)]
@@ -225,10 +236,8 @@ fn prepare_pipeline_state(
     vertex_shader: &str,
     fragment_shader: &str,
 ) -> Result<RenderPipelineState, Box<dyn std::error::Error>> {
-    eprintln!("Do I get here");
     let vert = library.get_function(vertex_shader, None)?;
     let frag = library.get_function(fragment_shader, None)?;
-    eprintln!("Do I get here? {:?}", frag);
 
     let pipeline_state_descriptor = RenderPipelineDescriptor::new();
     pipeline_state_descriptor.set_vertex_function(Some(&vert));

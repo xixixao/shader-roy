@@ -1,5 +1,7 @@
 #![allow(non_camel_case_types)]
 
+pub type float = f32;
+
 pub struct float2 {
   pub x: f32,
   pub y: f32,
