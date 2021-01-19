@@ -10,7 +10,6 @@ extern crate objc;
 mod parser;
 mod prelude;
 mod shader;
-mod shader_prelude;
 
 use cocoa::{appkit::NSView, base::id as cocoa_id};
 

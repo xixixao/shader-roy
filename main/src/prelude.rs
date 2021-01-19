@@ -105,3 +105,80 @@ impl UnstableMath for f32 {
     x
   }
 }
+
+use std::ops::*;
+pub fn mix<Tx, Ty, Ta>(
+  x: Tx,
+  y: Ty,
+  a: Ta,
+) -> <Tx as Add<<<Ty as Sub<Tx>>::Output as Mul<Ta>>::Output>>::Output
+where
+  Tx: Copy,
+  Ty: Sub<Tx>,
+  <Ty as Sub<Tx>>::Output: Mul<Ta>,
+  Tx: Add<<<Ty as Sub<Tx>>::Output as Mul<Ta>>::Output>,
+{
+  x + (y - x) * a
+}
+
+pub trait MixTrait<Tx, Ty>: Sized {
+  fn mix(self, x: Tx, y: Ty) -> <Tx as Add<<<Ty as Sub<Tx>>::Output as Mul<Self>>::Output>>::Output
+  where
+    Tx: Copy,
+    Ty: Sub<Tx>,
+    <Ty as Sub<Tx>>::Output: Mul<Self>,
+    Tx: Add<<<Ty as Sub<Tx>>::Output as Mul<Self>>::Output>,
+  {
+    mix(x, y, self)
+  }
+}
+
+impl MixTrait<Float3, Float3> for Float {}
+
+pub trait ComponentWiseMath {
+  // fn abs(self) -> Self;
+  // fn min(self, b: Self) -> Self;
+  fn cos(self) -> Self;
+}
+
+impl ComponentWiseMath for Float3 {
+  fn cos(self) -> Self {
+    float3(self.x.cos(), self.y.cos(), self.z.cos())
+  }
+}
+
+pub trait Geometric {
+  fn length(self) -> Float;
+}
+
+impl Geometric for Float2 {
+  fn length(self) -> Float {
+    self.magnitude()
+  }
+}
+
+// macro_rules! implement {
+//   ($trait:path > $first_type:ty $(, $type:tt)* { $($implementation:item)* }) => {
+//     impl $trait for $first_type {
+//       $($implementation)*
+//     }
+//     implement! {
+//       $trait > $($type),* {
+//         $($implementation)*
+//       }
+//     }
+//   };
+//   ($trait:path > $_:tt) => {};
+// }
+
+// implement! {
+//   SharedMath > Uint, Int, Float, Float2, Float4 {
+//     fn abs(self) -> Self {
+//       self
+//     }
+//     fn min(self, b: Self) -> Self {
+//       let _ = b;
+//       self
+//     }
+//   }
+// }

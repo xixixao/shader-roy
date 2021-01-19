@@ -43,9 +43,12 @@ fn print_ast_into_msl(file: syn::File) -> Result<String> {
             .iter()
             .map(|param| {
               Ok(match param {
-                syn::FnArg::Typed(syn::PatType { ty, pat, .. }) => {
-                  format!("{} {}", cp(ty), cp(pat))
-                }
+                syn::FnArg::Typed(syn::PatType { ty, pat, .. }) => match &**pat {
+                  syn::Pat::Ident(syn::PatIdent { ident, .. }) => {
+                    format!("{} {}", cp(ty), ident)
+                  }
+                  _ => anyhow::bail!("Unsupported argument type"),
+                },
                 _ => anyhow::bail!("Unsupported argument type"),
               })
             })
@@ -125,19 +128,43 @@ where
 
 struct AstMutator;
 
+// TODO: remove "mut" from FunArgs
+
 impl syn::visit_mut::VisitMut for AstMutator {
   fn visit_expr_mut(&mut self, node: &mut syn::Expr) {
     if let syn::Expr::MethodCall(expr) = node {
       let syn::ExprMethodCall {
         receiver,
-        method,
         args,
+        method,
         ..
       } = expr;
+
+      if method == "clamped" {
+        *method = quote::format_ident!("clamp");
+      } else if method == "smoothstep" || method == "mix" {
+        *node = syn::parse_quote!(
+          #method(#args, #receiver)
+        );
+        syn::visit_mut::visit_expr_mut(self, node);
+        return;
+      } else {
+        lazy_static::lazy_static! {
+            static ref RE: regex::Regex = regex::Regex::new(r"^(float|int|uint)\d_\d$").unwrap();
+        }
+        let method_name = method.to_string();
+        if RE.is_match(&method_name) {
+          let cut_method_name = &method_name[0..method_name.len() - 2];
+          *method = quote::format_ident!("{}", cut_method_name);
+        }
+      }
+      let new_args = std::iter::once(&**receiver)
+        .chain(args.iter())
+        .collect::<syn::punctuated::Punctuated<&syn::Expr, syn::Token![,]>>();
+
       *node = syn::parse_quote!(
-        #method(#receiver, #args)
+        #method(#new_args)
       );
-      return;
     }
 
     // Delegate to the default impl to visit nested expressions.
@@ -163,15 +190,13 @@ impl syn::visit_mut::VisitMut for AstMutator {
     // Delegate to the default impl to visit nested expressions.
     syn::visit_mut::visit_type_mut(self, node);
   }
-  fn visit_expr_method_call_mut(&mut self, node: &mut syn::ExprMethodCall) {
-    if node.method == "clamped" {
-      (*node).method = syn::parse_quote!("clamp");
+
+  fn visit_expr_call_mut(&mut self, node: &mut syn::ExprCall) {
+    let syn::ExprCall { args, .. } = node;
+    if args.trailing_punct() {
+      let last = args.pop().unwrap().into_value();
+      args.push(last);
     }
-    if node.method == "smoothstep" {
-      if let Some(last) = node.args.pop() {
-        node.args.insert(0, last.into_value());
-      }
-    }
-    syn::visit_mut::visit_expr_method_call_mut(self, node);
+    syn::visit_mut::visit_expr_call_mut(self, node);
   }
 }

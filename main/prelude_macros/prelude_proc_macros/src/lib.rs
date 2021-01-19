@@ -25,7 +25,7 @@ pub fn define_trait(input: TokenStream) -> TokenStream {
         let mut_ident_string = &mut type_string[0..1];
         mut_ident_string.make_ascii_lowercase();
     }
-    let method_name = quote::format_ident!("{}", type_string);
+    let method_name = quote::format_ident!("{}_{}", type_string, num_args);
     let arg_names = ["a", "b", "c"];
 
     let varargs: syn::punctuated::Punctuated<_, syn::Token![,]> = (0..num_args - 1)
@@ -45,14 +45,14 @@ pub fn define_trait(input: TokenStream) -> TokenStream {
     } else {
         quote::quote!(#name)
     };
-    eprintln!(
-        "{}",
-        quote::quote!(
-            pub trait #trait_name {
-                fn #method_name(self, #args) -> #type_name;
-            }
-        )
-    );
+    // eprintln!(
+    //     "{}",
+    //     quote::quote!(
+    //         pub trait #trait_name {
+    //             fn #method_name(self, #args) -> #type_name;
+    //         }
+    //     )
+    // );
     TokenStream::from(quote::quote!(
         pub trait #trait_name {
             fn #method_name(self, #args) -> #type_name;
@@ -113,7 +113,8 @@ pub fn implement_trait(input: TokenStream) -> TokenStream {
     let result_arity: usize = type_string[type_string.len() - 1..type_string.len()]
         .parse()
         .unwrap_or(1);
-    let method_name = quote::format_ident!("{}", type_string);
+    let fun_name = quote::format_ident!("{}", type_string);
+    let method_name = quote::format_ident!("{}_{}", type_string, num_args);
     let varargs: syn::punctuated::Punctuated<syn::Ident, syn::Token![,]> =
         arg_list.iter().map(|Arg { ty, .. }| ty.clone()).collect();
     let trait_name = if num_args > 1 {
@@ -162,11 +163,20 @@ pub fn implement_trait(input: TokenStream) -> TokenStream {
             arg
         })
         .collect();
-    eprintln!("{}", quote::quote!(#method_name(#implementation_args)));
+    // eprintln!(
+    //     "{}",
+    //     quote::quote!(
+    //         impl #trait_name for #receiver_type {
+    //             fn #method_name(self, #quoted_arg_list) -> #result_type {
+    //                 #method_name(#implementation_args)
+    //             }
+    //         }
+    //     )
+    // );
     TokenStream::from(quote::quote!(
         impl #trait_name for #receiver_type {
             fn #method_name(self, #quoted_arg_list) -> #result_type {
-                #method_name(#implementation_args)
+                #fun_name(#implementation_args)
             }
         }
     ))
