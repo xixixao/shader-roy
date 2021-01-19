@@ -163,4 +163,15 @@ impl syn::visit_mut::VisitMut for AstMutator {
     // Delegate to the default impl to visit nested expressions.
     syn::visit_mut::visit_type_mut(self, node);
   }
+  fn visit_expr_method_call_mut(&mut self, node: &mut syn::ExprMethodCall) {
+    if node.method == "clamped" {
+      (*node).method = syn::parse_quote!("clamp");
+    }
+    if node.method == "smoothstep" {
+      if let Some(last) = node.args.pop() {
+        node.args.insert(0, last.into_value());
+      }
+    }
+    syn::visit_mut::visit_expr_method_call_mut(self, node);
+  }
 }

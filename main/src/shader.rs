@@ -1,3 +1,6 @@
+#![allow(unused_variables)]
+#![allow(unstable_name_collisions)]
+
 use crate::prelude::*;
 
 // pub fn pixel_color(coordinates: float2, size: float2) -> float4 {
@@ -20,13 +23,18 @@ use crate::prelude::*;
 pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
   // project screen coordinate into world
   let p: Float2 = screen_to_world(coordinates, size);
-  float4(0.0, 0.0, 0.0, 0.0)
+  // signed distance for scene
+  let sd: Float = sdf(p);
+  // compute signed distance to a colour
+  let col: Float3 = shade(sd);
+  // float4(0.0, 0.0, 0.0, 0.0)
+  col.float4(1.0)
 }
-//     // signed distance for scene
-//     float sd = sdf(p);
-//     // compute signed distance to a colour
-//     vec3 col = shade(sd);
-//     fragColor = vec4(col, 1.0);
+
+fn sdf(p: Float2) -> Float {
+  0.0
+}
+
 // }
 
 // // --- SDF utility library
@@ -63,31 +71,34 @@ pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
 // // --- Misc functions
 
 // // https://www.shadertoy.com/view/ll2GD3
-// vec3 palette(in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d)
-// {
-//     t = clamp(t, 0., 1.);
-//     return a + b*cos(6.28318*(c*t+d));
-// }
+#[allow(clippy::many_single_char_names)]
+fn palette(t: Float, a: Float3, b: Float3, c: Float3, d: Float3) -> Float3 {
+  t = t.clamp(0., 1.);
+  return a + b * (6.28318 * (c * t + d)).cos();
+}
 
 fn screen_to_world(screen: Float2, size: Float2) -> Float2 {
   let mut result: Float2 = 2.0 * (screen / size - 0.5);
-  // result.x *= size.x/size.y;
-  // result
-  float2(0.0, 0.0)
+  result.x *= size.x / size.y;
+  result
 }
 
-// vec3 shade(float sd)
-// {
-//     float maxDist = 2.0;
-//     vec3 palCol = palette(clamp(0.5-sd*0.4, -maxDist,maxDist),
-//                       vec3(0.3,0.3,0.0),vec3(0.8,0.8,0.1),vec3(0.9,0.7,0.0),vec3(0.3,0.9,0.8));
+fn shade(sd: Float) -> Float3 {
+  let maxDist: Float = 2.0;
+  let palCol: Float3 = palette(
+    (0.5 - sd * 0.4).clamp(-maxDist, maxDist),
+    float3(0.3, 0.3, 0.0),
+    float3(0.8, 0.8, 0.1),
+    float3(0.9, 0.7, 0.0),
+    float3(0.3, 0.9, 0.8),
+  );
 
-//     vec3 col = palCol;
-//     // Darken around surface
-// 	col = mix(col, col*1.0-exp(-10.0*abs(sd)), 0.4);
-// 	// repeating lines
-//     col *= 0.8 + 0.2*cos(150.0*sd);
-//     // White outline at surface
-//     col = mix(col, vec3(1.0), 1.0-smoothstep(0.0,0.01,abs(sd)));
-//     return col;
-// }
+  let mut col: Float3 = palCol;
+  // Darken around surface
+  col = col.mix(col * 1.0 - (-10.0 * sd.abs()).exp(), 0.4);
+  // repeating lines
+  col *= 0.8 + 0.2 * cos(150.0 * sd);
+  // White outline at surface
+  col = col.mix(float3(1.0), 1.0 - sd.abs().smoothstep(0.0, 0.01));
+  col
+}

@@ -1,0 +1,9 @@
+[package]
+name = "prelude_macros"
+version = "0.1.0"
+authors = ["Michal Srb <xixixao@seznam.cz>"]
+edition = "2018"
+
+[dependencies]
+prelude_proc_macros = { path="prelude_proc_macros" }
+quote = "1.0.8"

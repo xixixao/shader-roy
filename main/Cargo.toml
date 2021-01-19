@@ -6,7 +6,11 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[unstable]
+clamp = "yes"
+
 [dependencies]
+prelude_macros = { path="prelude_macros" }
 metal = { git = "https://github.com/xixixao/metal-rs", branch = "fix-errors-new-library" }
 objc = { version = "0.2.4", features = ["objc_exception"] }
 winit = "0.24.0"
@@ -15,3 +19,4 @@ syn = { version = "1.0.58", features = ["full", "visit-mut"]}
 quote = "1.0.8"
 anyhow = "1.0.38"
 proc-macro2 = "1.0.24"
+vek = "0.13.0"
