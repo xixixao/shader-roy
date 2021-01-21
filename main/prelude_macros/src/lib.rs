@@ -38,3 +38,18 @@ macro_rules! implement_trait {
     }
   }
 }
+
+#[macro_export]
+macro_rules! implement {
+  ($trait:path > $first_type:ty $(, $type:tt)* { $($implementation:item)* }) => {
+    impl $trait for $first_type {
+      $($implementation)*
+    }
+    $crate::implement! {
+      $trait > $($type),* {
+        $($implementation)*
+      }
+    }
+  };
+  ($trait:path > $_:tt) => {};
+}

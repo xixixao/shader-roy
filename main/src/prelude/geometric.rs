@@ -9,3 +9,7 @@ impl Geometric for Float2 {
     self.magnitude()
   }
 }
+
+pub fn length<T: Geometric>(x: T) -> Float {
+  x.length()
+}

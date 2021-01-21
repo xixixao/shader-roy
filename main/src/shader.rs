@@ -1,24 +1,4 @@
-#![allow(unused_variables)]
-#![allow(unstable_name_collisions)]
-
 use crate::prelude::*;
-
-// pub fn pixel_color(coordinates: float2, size: float2) -> float4 {
-//   let _x = float2(2.0, 2.0);
-//   let _y = test();
-//   let mut d: float = 1000.0;
-//   d = d.min(100.0);
-
-//   // d = min(d, sdCircle(p, vec2(-0.1, 0.4), 0.15));
-//   // d = min(d, sdCircle(p, vec2( 0.5, 0.1), 0.35));
-
-//   // return d;
-//   float4(coordinates.x / size.x, coordinates.y / size.y, 0.0, 1.0)
-// }
-
-// fn test() -> float2 {
-//   float2(1.0, 2.0)
-// }
 
 pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
   // project screen coordinate into world
@@ -31,42 +11,41 @@ pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
 }
 
 fn sdf(p: Float2) -> Float {
-  // min(p.length(), float2(0.2)).y
-  min((p - float2(0.2, 0.3)).length() - 0.4, 0.3)
+  // Example of the helpers
+  op_blend(
+    op_u(
+      sd_circle(p, float2(-0.2, 0.3), 0.2),
+      sd_circle(p, float2(-0.5, 0.3), 0.3),
+    ),
+    sd_box(p, float2(0.2, 0.3), 0.3.float2_1()),
+  )
 }
 
-// }
+// --- SDF utility library
 
-// // --- SDF utility library
+fn sd_circle(p: Float2, pos: Float2, radius: Float) -> Float {
+  length(p - pos) - radius
+}
 
-// float sdCircle(in Float2 p, in Float2 pos, float radius)
-// {
-//     return length(p-pos)-radius;
-// }
+fn sd_box(p: Float2, pos: Float2, size: Float2) -> Float {
+  let d: Float2 = (p - pos).abs() - size;
+  min(0.0, max(d.x, d.y)) + length(max(d, 0.0))
+}
 
-// float sdBox(in Float2 p, in Float2 pos, in Float2 size)
-// {
-//     Float2 d = abs(p-pos)-size;
-//     return min(0.0, max(d.x, d.y))+length(max(d,0.0));
-// }
+// polynomial smooth min (k = 0.1);
+fn smin_cubic(a: Float, b: Float, k: Float) -> Float {
+  let h: Float = max(k - (a - b).abs(), 0.0);
+  min(a, b) - h * h * h / (6.0 * k * k)
+}
 
-// // polynomial smooth min (k = 0.1);
-// float sminCubic(float a, float b, float k)
-// {
-//     float h = max(k-abs(a-b), 0.0);
-//     return min(a, b) - h*h*h/(6.0*k*k);
-// }
+fn op_u(d1: Float, d2: Float) -> Float {
+  min(d1, d2)
+}
 
-// float opU(float d1, float d2)
-// {
-//     return min(d1, d2);
-// }
-
-// float opBlend(float d1, float d2)
-// {
-//     float k = 0.2;
-//     return sminCubic(d1, d2, k);
-// }
+fn op_blend(d1: Float, d2: Float) -> Float {
+  let k: Float = 0.2;
+  smin_cubic(d1, d2, k)
+}
 
 // // --- Misc functions
 

@@ -1,14 +1,19 @@
 use super::*;
 
 pub trait ComponentWiseMath {
-  // fn abs(self) -> Self;
-  // fn min(self, b: Self) -> Self;
+  fn abs(self) -> Self;
   fn cos(self) -> Self;
 }
 
-impl ComponentWiseMath for Float3 {
-  fn cos(self) -> Self {
-    float3(self.x.cos(), self.y.cos(), self.z.cos())
+prelude_macros::implement! {
+  ComponentWiseMath > Float2, Float3, Float4 {
+    fn abs(self) -> Self {
+      self.map(|x| x.abs())
+    }
+
+    fn cos(self) -> Self {
+      self.map(|x| x.cos())
+    }
   }
 }
 
