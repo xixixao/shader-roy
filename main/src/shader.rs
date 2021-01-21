@@ -31,7 +31,8 @@ pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
 }
 
 fn sdf(p: Float2) -> Float {
-  0.6 - p.length()
+  // min(p.length(), float2(0.2)).y
+  min((p - float2(0.2, 0.3)).length() - 0.4, 0.3)
 }
 
 // }
@@ -72,7 +73,7 @@ fn sdf(p: Float2) -> Float {
 // // https://www.shadertoy.com/view/ll2GD3
 #[allow(clippy::many_single_char_names)]
 fn palette(mut t: Float, a: Float3, b: Float3, c: Float3, d: Float3) -> Float3 {
-  t = t.clamp(0., 1.);
+  t = t.clamped(0., 1.);
   a + b * (6.28318 * (c * t + d)).cos()
 }
 
@@ -85,7 +86,7 @@ fn screen_to_world(screen: Float2, size: Float2) -> Float2 {
 fn shade(sd: Float) -> Float3 {
   let max_dist: Float = 2.0;
   let pal_col: Float3 = palette(
-    (0.5 - sd * 0.4).clamp(-max_dist, max_dist),
+    (0.5 - sd * 0.4).clamped(-max_dist, max_dist),
     float3(0.3, 0.3, 0.0),
     float3(0.8, 0.8, 0.1),
     float3(0.9, 0.7, 0.0),
@@ -94,11 +95,10 @@ fn shade(sd: Float) -> Float3 {
 
   let mut col: Float3 = pal_col;
   // Darken around surface
-  col = mix(col, col * 1.0 - (-10.0 * sd.abs()).exp(), 0.4);
-  // col = 0.4.mix(col, col * 1.0 - (-10.0 * sd.abs()).exp());
+  col = 0.4.mix(col, col * 1.0 - (-10.0 * sd.abs()).exp());
   // repeating lines
   col *= 0.8 + 0.2 * (150.0 * sd).cos();
   // White outline at surface
-  // col = col.mix(1.0.float3_1(), 1.0 - sd.abs().smoothstep(0.0, 0.01));
+  col = (1.0 - sd.abs().smoothstep(0.0, 0.01)).mix(col, 1.0.float3_1());
   col
 }

@@ -128,9 +128,16 @@ where
 
 struct AstMutator;
 
-// TODO: remove "mut" from FunArgs
-
 impl syn::visit_mut::VisitMut for AstMutator {
+  fn visit_ident_mut(&mut self, node: &mut syn::Ident) {
+    let name = node.to_string();
+    if name == "min" {
+      *node = quote::format_ident!("fmin");
+    } else if name == "max" {
+      *node = quote::format_ident!("fmax");
+    }
+    syn::visit_mut::visit_ident_mut(self, node);
+  }
   fn visit_expr_mut(&mut self, node: &mut syn::Expr) {
     if let syn::Expr::MethodCall(expr) = node {
       let syn::ExprMethodCall {
