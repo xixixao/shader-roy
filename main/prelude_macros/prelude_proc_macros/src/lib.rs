@@ -45,19 +45,13 @@ pub fn define_trait(input: TokenStream) -> TokenStream {
     } else {
         quote::quote!(#name)
     };
-    // eprintln!(
-    //     "{}",
-    //     quote::quote!(
-    //         pub trait #trait_name {
-    //             fn #method_name(self, #args) -> #type_name;
-    //         }
-    //     )
-    // );
-    TokenStream::from(quote::quote!(
+    let result = quote::quote!(
         pub trait #trait_name {
             fn #method_name(self, #args) -> #type_name;
         }
-    ))
+    );
+    // eprintln!(result);
+    TokenStream::from(result)
 }
 
 struct ImplementTraitInput {
@@ -163,21 +157,13 @@ pub fn implement_trait(input: TokenStream) -> TokenStream {
             arg
         })
         .collect();
-    // eprintln!(
-    //     "{}",
-    //     quote::quote!(
-    //         impl #trait_name for #receiver_type {
-    //             fn #method_name(self, #quoted_arg_list) -> #result_type {
-    //                 #method_name(#implementation_args)
-    //             }
-    //         }
-    //     )
-    // );
-    TokenStream::from(quote::quote!(
+    let result = quote::quote!(
         impl #trait_name for #receiver_type {
             fn #method_name(self, #quoted_arg_list) -> #result_type {
                 #fun_name(#implementation_args)
             }
         }
-    ))
+    );
+    // eprintln!(result);
+    TokenStream::from(result)
 }

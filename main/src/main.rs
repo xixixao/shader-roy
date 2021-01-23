@@ -7,9 +7,7 @@
 
 extern crate objc;
 
-mod parser;
-pub mod prelude;
-mod shader;
+use metal_hot_reload::*;
 
 use cocoa::{appkit::NSView, base::id as cocoa_id};
 
