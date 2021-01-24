@@ -12,17 +12,30 @@ pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
 
 fn sdf(p: Float2, elapsed_time_secs: Float) -> Float {
   // Example of the helpers
-  op_blend(
-    subtract(
-      sd_circle(p, float2(elapsed_time_secs.sin(), 0.3), 0.2),
-      op_u(
-        sd_circle(p, float2(-0.5, 0.3), 0.3),
-        sd_circle(p, float2(elapsed_time_secs.sin().cos(), 0.3), 0.3),
-      ),
-    ),
-    sd_box(p, float2(0.2, 0.3), 0.3.float2()),
-  )
+  length(uint2(p))
+  // op_blend(
+  //   subtract(
+  //     sd_circle(p, float2(elapsed_time_secs.sin(), 0.3), 0.2),
+  //     op_u(
+  //       sd_circle(p, float2(-0.5, 0.3), 0.3),
+  //       sd_circle(p, float2(elapsed_time_secs.sin().cos(), 0.3), 0.3),
+  //     ),
+  //   ),
+  //   sd_box(p, float2(0.2, 0.3), 0.3.float2()),
+  // )
 }
+
+// fn getCameraRayDir(uv: Float2, camPos: Float3, camTarget: Float3) -> Float3 {
+//   // Calculate camera's "orthonormal basis", i.e. its transform matrix components
+//   let camForward = normalize(camTarget - camPos);
+//   let camRight = normalize(float3(0.0, 1.0, 0.0).cross(camForward));
+//   let camUp = normalize(camForward.cross(camRight));
+
+//   let fPersp = 2.0;
+//   let vDir = normalize(uv.x * camRight + uv.y * camUp + camForward * fPersp);
+
+//   vDir
+// }
 
 // --- SDF utility library
 
