@@ -24,7 +24,7 @@ In general you will write Rust that closely resembles the C++ Metal Shading Lang
 
 <table>
 <tr>
-<td> API </td> <td> C++ </td> <td> Rust </td>
+<td> API </td> <td> MSL (C++) </td> <td> Rust </td>
 </tr>
 
 <tr>
@@ -76,27 +76,59 @@ let x = 1.0.float2();
 </tr>
 
 <tr>
-<td> Clamp </td>
+<td> Functions </td>
 <td>
 
 ```cpp
-clamp(x, 0.3, 0.4);
+min(x, y);
 ```
 
 </td>
 <td>
 
+Math, geometric, common functions need to be called as methods
+
 ```rust
-clamp(x, 0.3, 0.4);
-// Notice "clamped", not "clamp"
-x.clamped(0.3, 0.4);
+x.min(y)
 ```
 
 </td>
 </tr>
 
 <tr>
-<td> mix, smoothstep, step </td>
+<td> Renamed functions </td>
+<td>
+
+```cpp
+clamp(x, 0.3, 0.4);
+length(x);
+length_squared(x);
+normalize(x);
+faceforward(x, incident, reference);
+reflect(x, normal);
+refract(x, normal, eta);
+```
+
+</td>
+<td>
+
+Names follow [vek](https://docs.rs/vek/0.13.1/vek/vec/repr_c/vec3/struct.Vec3.html)
+
+```rust
+x.clamped(0.3, 0.4);
+x.magnitude();
+x.magnitude_squared();
+x.normalized();
+x.face_forward(incident, reference);
+x.reflected(normal);
+x.refracted(normal, eta);
+```
+
+</td>
+</tr>
+
+<tr>
+<td> Methods with different argument order </td>
 <td>
 
 ```cpp
@@ -108,14 +140,11 @@ step(0.3, x);
 </td>
 <td>
 
-When one argument is special from the others it is used as the receiver of the method call. Bare function argument order is unchanged.
+When one argument is special from the others it is used as the receiver of the method call.
 
 ```rust
-mix(0.3, 0.4, a);
 a.mix(0.3, 0.4);
-smoothstep(0.3, 0.4, x);
 x.smoothstep(0.3, 0.4);
-step(0.3, x);
 x.step(0.3);
 ```
 

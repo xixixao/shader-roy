@@ -69,17 +69,3 @@ impl MinMax<Float, Float2> for Float2 {
     Float2::partial_max(self, b.into())
   }
 }
-
-pub fn min<T, U, R>(a: T, b: U) -> R
-where
-  T: MinMax<U, R>,
-{
-  a.min(b)
-}
-
-pub fn max<T, U, R>(a: T, b: U) -> R
-where
-  T: MinMax<U, R>,
-{
-  a.max(b)
-}

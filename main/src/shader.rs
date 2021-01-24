@@ -12,7 +12,8 @@ pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
 
 fn sdf(p: Float2, elapsed_time_secs: Float) -> Float {
   // Example of the helpers
-  length(uint2(p))
+  // length(uint2(p))
+  0.3
   // op_blend(
   //   subtract(
   //     sd_circle(p, float2(elapsed_time_secs.sin(), 0.3), 0.2),
@@ -25,41 +26,39 @@ fn sdf(p: Float2, elapsed_time_secs: Float) -> Float {
   // )
 }
 
-// fn getCameraRayDir(uv: Float2, camPos: Float3, camTarget: Float3) -> Float3 {
-//   // Calculate camera's "orthonormal basis", i.e. its transform matrix components
-//   let camForward = normalize(camTarget - camPos);
-//   let camRight = normalize(float3(0.0, 1.0, 0.0).cross(camForward));
-//   let camUp = normalize(camForward.cross(camRight));
+fn get_camera_ray_dir(uv: Float2, cam_pos: Float3, cam_target: Float3) -> Float3 {
+  // Calculate camera's "orthonormal basis", i.e. its transform matrix components
+  let cam_forward = (cam_target - cam_pos).normalized();
+  let cam_right = (float3(0.0, 1.0, 0.0).cross(cam_forward)).normalized();
+  let cam_up = (cam_forward.cross(cam_right)).normalized();
 
-//   let fPersp = 2.0;
-//   let vDir = normalize(uv.x * camRight + uv.y * camUp + camForward * fPersp);
-
-//   vDir
-// }
+  let f_persp = 2.0;
+  (uv.x * cam_right + uv.y * cam_up + cam_forward * f_persp).normalized()
+}
 
 // --- SDF utility library
 
 fn subtract(d1: Float, d2: Float) -> Float {
-  max(-d1, d2)
+  -d1.max(d2)
 }
 
 fn sd_circle(p: Float2, pos: Float2, radius: Float) -> Float {
-  length(p - pos) - radius
+  p.distance(pos) - radius
 }
 
 fn sd_box(p: Float2, pos: Float2, size: Float2) -> Float {
   let d: Float2 = (p - pos).abs() - size;
-  min(0.0, max(d.x, d.y)) + length(max(d, 0.0))
+  d.x.clamped(d.y, 0.0) + d.max(0.0).magnitude()
 }
 
 // polynomial smooth min (k = 0.1);
 fn smin_cubic(a: Float, b: Float, k: Float) -> Float {
-  let h: Float = max(k - (a - b).abs(), 0.0);
-  min(a, b) - h * h * h / (6.0 * k * k)
+  let h: Float = k - (a - b).abs().max(0.0);
+  a.min(b) - h * h * h / (6.0 * k * k)
 }
 
 fn op_u(d1: Float, d2: Float) -> Float {
-  min(d1, d2)
+  d1.min(d2)
 }
 
 fn op_blend(d1: Float, d2: Float) -> Float {

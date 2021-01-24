@@ -27,7 +27,15 @@ lazy_static::lazy_static! {
 
 lazy_static::lazy_static! {
   static ref RENAMED_METHODS: std::collections::HashMap<&'static str, &'static str> =
-    [("clamped", "clamp")].iter().cloned().collect();
+    [
+      ("clamped", "clamp"),
+      ("magnitude", "length"),
+      ("magnitude_squared", "length_squared"),
+      ("face_forward", "faceforward"),
+      ("normalized", "normalize"),
+      ("reflected", "reflect"),
+      ("refracted", "refract"),
+    ].iter().cloned().collect();
 }
 
 lazy_static::lazy_static! {

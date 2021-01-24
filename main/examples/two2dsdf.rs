@@ -25,24 +25,23 @@ fn sdf(p: Float2) -> Float {
 }
 
 // --- SDF utility library
-
 fn sd_circle(p: Float2, pos: Float2, radius: Float) -> Float {
-  length(p - pos) - radius
+  p.distance(pos) - radius
 }
 
 fn sd_box(p: Float2, pos: Float2, size: Float2) -> Float {
   let d: Float2 = (p - pos).abs() - size;
-  min(0.0, max(d.x, d.y)) + length(max(d, 0.0))
+  d.x.clamped(d.y, 0.0) + d.max(0.0).magnitude()
 }
 
 // polynomial smooth min (k = 0.1);
 fn smin_cubic(a: Float, b: Float, k: Float) -> Float {
-  let h: Float = max(k - (a - b).abs(), 0.0);
-  min(a, b) - h * h * h / (6.0 * k * k)
+  let h: Float = k - (a - b).abs().max(0.0);
+  a.min(b) - h * h * h / (6.0 * k * k)
 }
 
 fn op_u(d1: Float, d2: Float) -> Float {
-  min(d1, d2)
+  d1.min(d2)
 }
 
 fn op_blend(d1: Float, d2: Float) -> Float {
