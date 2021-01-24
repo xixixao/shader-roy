@@ -52,11 +52,11 @@ struct Size {
 
 fn main() -> Result<()> {
     let events_loop = winit::event_loop::EventLoop::new();
-    let size = winit::dpi::LogicalSize::new(800, 600);
+    let window_size = winit::dpi::LogicalSize::new(800, 600);
 
     let window = winit::window::WindowBuilder::new()
-        .with_inner_size(size)
-        .with_title("Metal Window Example")
+        .with_inner_size(window_size)
+        .with_title("ShaderRoy")
         .build(&events_loop)
         .unwrap();
 
@@ -76,9 +76,7 @@ fn main() -> Result<()> {
     let draw_size = window.inner_size();
     layer.set_drawable_size(CGSize::new(draw_size.width as f64, draw_size.height as f64));
 
-    let mut r = 0.0f32;
-
-    let clear_rect = vec![ClearRect {
+    let vector_rect = vec![ClearRect {
         rect: Rect {
             x: -1.0,
             y: -1.0,
@@ -86,15 +84,15 @@ fn main() -> Result<()> {
             h: 2.0,
         },
         color: Color {
-            r: 0.5,
-            g: 0.8,
-            b: 0.5,
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
             a: 1.0,
         },
     }];
 
-    let clear_rect_buffer = device.new_buffer_with_data(
-        clear_rect.as_ptr() as *const _,
+    let vector_buffer = device.new_buffer_with_data(
+        vector_rect.as_ptr() as *const _,
         mem::size_of::<ClearRect>() as u64,
         MTLResourceOptions::CPUCacheModeDefaultCache | MTLResourceOptions::StorageModeManaged,
     );
@@ -175,7 +173,7 @@ fn main() -> Result<()> {
                         });
 
                         encoder.set_render_pipeline_state(pipeline_state.as_ref().unwrap());
-                        encoder.set_vertex_buffer(0, Some(&clear_rect_buffer), 0);
+                        encoder.set_vertex_buffer(0, Some(&vector_buffer), 0);
                         encoder.set_fragment_bytes(
                             0,
                             std::mem::size_of::<Size>() as u64,
@@ -192,22 +190,9 @@ fn main() -> Result<()> {
                         );
                         // encoder.set_fragment_buffer(0, Some(&size_for_shader_buffer), 0);
 
-                        // encoder.set_scissor_rect(MTLScissorRect {
-                        //     x: 0,
-                        //     y: 0,
-                        //     width: physical_size.width as _,
-                        //     height: physical_size.height as _,
-                        // });
-
-                        // encoder.set_render_pipeline_state(&triangle_pipeline_state);
-                        // encoder.set_vertex_buffer(0, Some(&vbuf), 0);
-                        // encoder.draw_primitives(MTLPrimitiveType::Triangle, 0, 3);
                         encoder.end_encoding();
-
                         command_buffer.present_drawable(&drawable);
                         command_buffer.commit();
-
-                        r += 0.01f32;
                     }
                     _ => {}
                 };
@@ -250,24 +235,13 @@ fn prepare_pipeline_state(
         .object_at(0)
         .ok_or("No attachment")?;
     attachment.set_pixel_format(MTLPixelFormat::BGRA8Unorm);
-
-    // attachment.set_blending_enabled(true);
-    // attachment.set_rgb_blend_operation(metal::MTLBlendOperation::Add);
-    // attachment.set_alpha_blend_operation(metal::MTLBlendOperation::Add);
-    // attachment.set_source_rgb_blend_factor(metal::MTLBlendFactor::SourceAlpha);
-    // attachment.set_source_alpha_blend_factor(metal::MTLBlendFactor::SourceAlpha);
-    // attachment.set_destination_rgb_blend_factor(metal::MTLBlendFactor::OneMinusSourceAlpha);
-    // attachment.set_destination_alpha_blend_factor(metal::MTLBlendFactor::OneMinusSourceAlpha);
     Ok(device.new_render_pipeline_state(&pipeline_state_descriptor)?)
 }
 
 fn prepare_render_pass_descriptor(descriptor: &RenderPassDescriptorRef, texture: &TextureRef) {
-    //descriptor.color_attachments().set_object_at(0, MTLRenderPassColorAttachmentDescriptor::alloc());
-    //let color_attachment: MTLRenderPassColorAttachmentDescriptor = unsafe { msg_send![descriptor.color_attachments().0, _descriptorAtIndex:0] };//descriptor.color_attachments().object_at(0);
     let color_attachment = descriptor.color_attachments().object_at(0).unwrap();
-
     color_attachment.set_texture(Some(texture));
     color_attachment.set_load_action(MTLLoadAction::Clear);
-    color_attachment.set_clear_color(MTLClearColor::new(0.2, 0.2, 0.25, 1.0));
+    color_attachment.set_clear_color(MTLClearColor::new(0.0, 0.0, 0.0, 1.0));
     color_attachment.set_store_action(MTLStoreAction::Store);
 }
