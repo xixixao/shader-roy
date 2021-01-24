@@ -1,21 +1,24 @@
 use crate::msl_prelude::*;
 
-pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
+pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
   // project screen coordinate into world
-  let p: Float2 = screen_to_world(coordinates, size);
+  let p: Float2 = screen_to_world(coordinates, input.window_size.float2());
   // signed distance for scene
-  let sd: Float = sdf(p);
+  let sd: Float = sdf(p, input.elapsed_time_secs);
   // compute signed distance to a colour
   let col: Float3 = shade(sd);
   (col, 1.0).float4()
 }
 
-fn sdf(p: Float2) -> Float {
+fn sdf(p: Float2, elapsed_time_secs: Float) -> Float {
   // Example of the helpers
   op_blend(
     subtract(
-      sd_circle(p, float2(-0.1, 0.3), 0.2),
-      sd_circle(p, float2(-0.5, 0.3), 0.3),
+      sd_circle(p, float2(elapsed_time_secs.sin(), 0.3), 0.2),
+      op_u(
+        sd_circle(p, float2(-0.5, 0.3), 0.3),
+        sd_circle(p, float2(elapsed_time_secs.sin().cos(), 0.3), 0.3),
+      ),
     ),
     sd_box(p, float2(0.2, 0.3), 0.3.float2()),
   )

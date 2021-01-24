@@ -13,3 +13,10 @@ pub use generic::*;
 pub use geometric::*;
 pub use math::*;
 pub use types::*;
+
+pub struct PixelInput {
+  /// Window size in physical units (at the native resolution of the display device)
+  pub window_size: Float2,
+  /// Time since starting the program, in fractions of seconds.
+  pub elapsed_time_secs: Float,
+}

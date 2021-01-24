@@ -45,9 +45,10 @@ struct ClearRect {
 }
 
 #[repr(C)]
-struct Size {
+struct Input {
     pub width: u32,
     pub height: u32,
+    pub elapsed_time_secs: f32,
 }
 
 fn main() -> Result<()> {
@@ -98,7 +99,7 @@ fn main() -> Result<()> {
     );
 
     let command_queue = device.new_command_queue();
-    let mut run_error: Option<String> = None;
+    let mut run_error: Option<()> = None;
 
     // Watch source file
     let (tx, rx) = std::sync::mpsc::channel();
@@ -110,7 +111,14 @@ fn main() -> Result<()> {
             notify::RecursiveMode::NonRecursive,
         )
         .unwrap();
+    watcher
+        .watch(
+            &*shader_compiler::SHADER_PRELUDE_PATH,
+            notify::RecursiveMode::NonRecursive,
+        )
+        .unwrap();
     let mut pipeline_state: Option<RenderPipelineState> = None;
+    let start_time = std::time::Instant::now();
 
     events_loop.run(move |event, _, control_flow| {
         autoreleasepool(|| {
@@ -133,7 +141,7 @@ fn main() -> Result<()> {
                     }
                     Event::RedrawRequested(_) => {
                         let file_event = rx.try_recv();
-                        if pipeline_state.is_none() || file_event.is_ok() {
+                        if pipeline_state.is_none() && run_error.is_none() || file_event.is_ok() {
                             let library = shader_compiler::compile_shader(
                                 &device,
                                 |fragment_shader_in_msl| {
@@ -146,6 +154,9 @@ fn main() -> Result<()> {
                                 "clear_rect_vertex",
                                 "clear_rect_fragment",
                             )?);
+                        }
+                        if pipeline_state.is_none() {
+                            return Ok(());
                         }
                         // let size_for_shader_buffer = device.new_buffer_with_data(
                         //     vec![physical_size.width as u32, physical_size.height as u32].as_ptr()
@@ -176,11 +187,12 @@ fn main() -> Result<()> {
                         encoder.set_vertex_buffer(0, Some(&vector_buffer), 0);
                         encoder.set_fragment_bytes(
                             0,
-                            std::mem::size_of::<Size>() as u64,
-                            &Size {
+                            std::mem::size_of::<Input>() as u64,
+                            &Input {
                                 width: physical_size.width,
                                 height: physical_size.height,
-                            } as *const Size as *const _,
+                                elapsed_time_secs: start_time.elapsed().as_secs_f32(),
+                            } as *const Input as *const _,
                         );
                         encoder.draw_primitives_instanced(
                             metal::MTLPrimitiveType::TriangleStrip,
@@ -199,11 +211,8 @@ fn main() -> Result<()> {
                 Ok(())
             })();
             if let Err(err) = res {
-                let message = format!("{}", err);
-                if run_error != Some(message.clone()) {
-                    println!("{}", message);
-                }
-                run_error = Some(message);
+                println!("{}", err);
+                run_error = Some(());
             }
         });
     });
@@ -212,7 +221,10 @@ fn main() -> Result<()> {
     {
         let _ = shader::pixel_color(
             msl_prelude::Float2 { x: 0.0, y: 0.0 },
-            msl_prelude::Float2 { x: 0.0, y: 0.0 },
+            msl_prelude::PixelInput {
+                window_size: msl_prelude::Float2 { x: 0.0, y: 0.0 },
+                elapsed_time_secs: 23.23,
+            },
         );
         Ok(())
     }

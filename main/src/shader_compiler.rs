@@ -3,7 +3,7 @@ use anyhow::Result;
 lazy_static::lazy_static! {
   static ref ROOT_PATH: std::path::PathBuf = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   pub static ref SHADER_PATH: std::path::PathBuf = ROOT_PATH.join("src/shader.rs");
-  static ref SHADER_PRELUDE_PATH: std::path::PathBuf = ROOT_PATH.join("src/shader_prelude.metal");
+  pub static ref SHADER_PRELUDE_PATH: std::path::PathBuf = ROOT_PATH.join("src/shader_prelude.metal");
 }
 
 pub fn compile_shader<F>(device: &metal::Device, mut on_compiled: F) -> Result<metal::Library>
