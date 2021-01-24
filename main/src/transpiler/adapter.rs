@@ -32,7 +32,7 @@ lazy_static::lazy_static! {
 
 lazy_static::lazy_static! {
   static ref METHODS_WITH_RECEIVER_LAST: regex::RegexSet = regex::RegexSet::new(
-    ["smoothstep", "mix"]
+    ["mix", "smoothstep", "step"]
       .iter()
       .map(|name| format!(r"^{}$", name)),
   )

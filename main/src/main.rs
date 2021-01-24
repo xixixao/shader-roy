@@ -124,11 +124,9 @@ fn main() {
                     Event::RedrawRequested(_) => {
                         let library =
                             shader_compiler::compile_shader(&device, |fragment_shader_in_msl| {
-                                if let Some(compiled_before) = &compiled {
-                                    if compiled_before != &fragment_shader_in_msl {
-                                        println!("{}", fragment_shader_in_msl);
-                                        compiled = Some(fragment_shader_in_msl);
-                                    }
+                                if compiled.as_ref() != Some(&fragment_shader_in_msl) {
+                                    println!("{}", fragment_shader_in_msl);
+                                    compiled = Some(fragment_shader_in_msl);
                                 }
                             })?;
 

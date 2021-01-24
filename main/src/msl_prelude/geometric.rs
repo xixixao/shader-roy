@@ -4,9 +4,11 @@ pub trait Geometric {
   fn length(self) -> Float;
 }
 
-impl Geometric for Float2 {
-  fn length(self) -> Float {
-    self.magnitude()
+prelude_macros::implement! {
+  Geometric > Float2, Float3, Float4 {
+    fn length(self) -> Float {
+      self.magnitude()
+    }
   }
 }
 

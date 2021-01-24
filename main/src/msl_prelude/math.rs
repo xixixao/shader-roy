@@ -5,6 +5,23 @@ pub trait ComponentWiseMath {
   fn cos(self) -> Self;
 }
 
+// fn abs<T, V>(x: T) -> T
+// where
+//   T: ScalarOrVector<V>,
+//   V: num::Signed,
+// {
+//   x.map(num::abs)
+// }
+
+// trait SignedMath<V>: ScalarOrVector<V> + Sized
+// where
+//   V: num::Signed,
+// {
+//   fn absed(self) -> Self {
+//     abs(self)
+//   }
+// }
+
 prelude_macros::implement! {
   ComponentWiseMath > Float2, Float3, Float4 {
     fn abs(self) -> Self {

@@ -96,12 +96,13 @@ x.clamped(0.3, 0.4);
 </tr>
 
 <tr>
-<td> Smoothstep / mix </td>
+<td> mix, smoothstep, step </td>
 <td>
 
 ```cpp
-smoothstep(0.3, 0.4, x);
 mix(0.3, 0.4, a);
+smoothstep(0.3, 0.4, x);
+step(0.3, x);
 ```
 
 </td>
@@ -110,10 +111,12 @@ mix(0.3, 0.4, a);
 When one argument is special from the others it is used as the receiver of the method call. Bare function argument order is unchanged.
 
 ```rust
-smoothstep(0.3, 0.4, x);
-x.smoothstep(0.3, 0.4);
 mix(0.3, 0.4, a);
 a.mix(0.3, 0.4);
+smoothstep(0.3, 0.4, x);
+x.smoothstep(0.3, 0.4);
+step(0.3, x);
+x.step(0.3);
 ```
 
 </td>
