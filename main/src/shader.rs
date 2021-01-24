@@ -13,8 +13,8 @@ pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
 fn sdf(p: Float2) -> Float {
   // Example of the helpers
   op_blend(
-    op_u(
-      sd_circle(p, float2(-0.2, 0.3), 0.2),
+    subtract(
+      sd_circle(p, float2(-0.1, 0.3), 0.2),
       sd_circle(p, float2(-0.5, 0.3), 0.3),
     ),
     sd_box(p, float2(0.2, 0.3), 0.3.float2()),
@@ -22,6 +22,10 @@ fn sdf(p: Float2) -> Float {
 }
 
 // --- SDF utility library
+
+fn subtract(d1: Float, d2: Float) -> Float {
+  max(-d1, d2)
+}
 
 fn sd_circle(p: Float2, pos: Float2, radius: Float) -> Float {
   length(p - pos) - radius

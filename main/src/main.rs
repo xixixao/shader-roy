@@ -7,6 +7,7 @@
 
 extern crate objc;
 
+use anyhow::Result;
 use metal_hot_reload::*;
 
 use cocoa::{appkit::NSView, base::id as cocoa_id};
@@ -49,7 +50,7 @@ struct Size {
     pub height: u32,
 }
 
-fn main() {
+fn main() -> Result<()> {
     let events_loop = winit::event_loop::EventLoop::new();
     let size = winit::dpi::LogicalSize::new(800, 600);
 
@@ -99,8 +100,19 @@ fn main() {
     );
 
     let command_queue = device.new_command_queue();
-    let mut compiled: Option<String> = None;
     let mut run_error: Option<String> = None;
+
+    // Watch source file
+    let (tx, rx) = std::sync::mpsc::channel();
+    let mut watcher = notify::watcher(tx, std::time::Duration::from_secs(1)).unwrap();
+    use notify::Watcher;
+    watcher
+        .watch(
+            &*shader_compiler::SHADER_PATH,
+            notify::RecursiveMode::NonRecursive,
+        )
+        .unwrap();
+    let mut pipeline_state: Option<RenderPipelineState> = None;
 
     events_loop.run(move |event, _, control_flow| {
         autoreleasepool(|| {
@@ -122,23 +134,21 @@ fn main() {
                         window.request_redraw();
                     }
                     Event::RedrawRequested(_) => {
-                        let library =
-                            shader_compiler::compile_shader(&device, |fragment_shader_in_msl| {
-                                if compiled.as_ref() != Some(&fragment_shader_in_msl) {
+                        let file_event = rx.try_recv();
+                        if pipeline_state.is_none() || file_event.is_ok() {
+                            let library = shader_compiler::compile_shader(
+                                &device,
+                                |fragment_shader_in_msl| {
                                     println!("{}", fragment_shader_in_msl);
-                                    compiled = Some(fragment_shader_in_msl);
-                                }
-                            })?;
-
-                        let drawable = layer.next_drawable().ok_or("No drawable")?;
-                        let clear_rect_pipeline_state = prepare_pipeline_state(
-                            &device,
-                            &library,
-                            "clear_rect_vertex",
-                            "clear_rect_fragment",
-                        )?;
-
-                        let physical_size = window.inner_size();
+                                },
+                            )?;
+                            pipeline_state = Some(prepare_pipeline_state(
+                                &device,
+                                &library,
+                                "clear_rect_vertex",
+                                "clear_rect_fragment",
+                            )?);
+                        }
                         // let size_for_shader_buffer = device.new_buffer_with_data(
                         //     vec![physical_size.width as u32, physical_size.height as u32].as_ptr()
                         //         as *const _,
@@ -149,12 +159,14 @@ fn main() {
 
                         let render_pass_descriptor = RenderPassDescriptor::new();
 
+                        let drawable = layer.next_drawable().ok_or("No drawable")?;
                         prepare_render_pass_descriptor(&render_pass_descriptor, drawable.texture());
 
                         let command_buffer = command_queue.new_command_buffer();
                         let encoder =
                             command_buffer.new_render_command_encoder(&render_pass_descriptor);
 
+                        let physical_size = window.inner_size();
                         encoder.set_scissor_rect(MTLScissorRect {
                             x: 0,
                             y: 0,
@@ -162,7 +174,7 @@ fn main() {
                             height: physical_size.height as _,
                         });
 
-                        encoder.set_render_pipeline_state(&clear_rect_pipeline_state);
+                        encoder.set_render_pipeline_state(pipeline_state.as_ref().unwrap());
                         encoder.set_vertex_buffer(0, Some(&clear_rect_buffer), 0);
                         encoder.set_fragment_bytes(
                             0,
@@ -217,6 +229,7 @@ fn main() {
             msl_prelude::Float2 { x: 0.0, y: 0.0 },
             msl_prelude::Float2 { x: 0.0, y: 0.0 },
         );
+        Ok(())
     }
 }
 

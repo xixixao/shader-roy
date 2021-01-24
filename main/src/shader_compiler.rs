@@ -1,14 +1,19 @@
 use anyhow::Result;
 
+lazy_static::lazy_static! {
+  static ref ROOT_PATH: std::path::PathBuf = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  pub static ref SHADER_PATH: std::path::PathBuf = ROOT_PATH.join("src/shader.rs");
+  static ref SHADER_PRELUDE_PATH: std::path::PathBuf = ROOT_PATH.join("src/shader_prelude.metal");
+}
+
 pub fn compile_shader<F>(device: &metal::Device, mut on_compiled: F) -> Result<metal::Library>
 where
   F: FnMut(String),
 {
-  let root_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-  let shader_prelude = std::fs::read_to_string(root_path.join("src/shader_prelude.metal"))?;
+  let shader_prelude = std::fs::read_to_string(&*SHADER_PRELUDE_PATH)?;
   let mut shader = shader_prelude;
   {
-    let fragment_shader_in_rust = std::fs::read_to_string(root_path.join("src/shader.rs"))?;
+    let fragment_shader_in_rust = std::fs::read_to_string(&*SHADER_PATH)?;
     let fragment_shader_in_msl =
       crate::transpiler::transpile_rust_to_msl(&fragment_shader_in_rust)?;
     shader.push_str(&fragment_shader_in_msl);
