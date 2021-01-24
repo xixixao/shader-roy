@@ -26,6 +26,31 @@ In general you will write Rust that closely resembles the C++ Metal Shading Lang
 <tr>
 <td> API </td> <td> C++ </td> <td> Rust </td>
 </tr>
+
+<tr>
+<td> Types </td>
+<td>
+
+```cpp
+float foo() {
+  return 3.0;
+}
+```
+
+</td>
+<td>
+
+All the standard types from MSL are capitalized to follow Rust conventions.
+
+```rust
+fn foo() -> Float {
+  3.0
+}
+```
+
+</td>
+</tr>
+
 <tr>
 <td> Constructors </td>
 <td>
@@ -69,6 +94,31 @@ x.clamped(0.3, 0.4);
 
 </td>
 </tr>
+
+<tr>
+<td> Smoothstep / mix </td>
+<td>
+
+```cpp
+smoothstep(0.3, 0.4, x);
+mix(0.3, 0.4, a);
+```
+
+</td>
+<td>
+
+When one argument is special from the others it is used as the receiver of the method call. Bare function argument order is unchanged.
+
+```rust
+smoothstep(0.3, 0.4, x);
+x.smoothstep(0.3, 0.4);
+mix(0.3, 0.4, a);
+a.mix(0.3, 0.4);
+```
+
+</td>
+</tr>
+
 </table>
 
 ## Development
