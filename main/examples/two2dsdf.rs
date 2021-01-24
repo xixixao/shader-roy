@@ -3,9 +3,9 @@
 
 use metal_hot_reload::msl_prelude::*;
 
-pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
+pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
   // project screen coordinate into world
-  let p: Float2 = screen_to_world(coordinates, size);
+  let p: Float2 = screen_to_world(coordinates, input.window_size);
   // signed distance for scene
   let sd: Float = sdf(p);
   // compute signed distance to a colour
