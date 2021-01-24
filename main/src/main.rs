@@ -122,23 +122,15 @@ fn main() {
                         window.request_redraw();
                     }
                     Event::RedrawRequested(_) => {
-                        let root_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-                        let shader_path = root_path.join("src/shader.metal");
-                        let mut shader = std::fs::read_to_string(shader_path)?;
-                        {
-                            let impl_path = root_path.join("src/shader.rs");
-                            let implementation_rust = std::fs::read_to_string(impl_path)?;
-                            let implementation =
-                                parser::transpile_rust_to_msl(&implementation_rust)?;
-                            shader.push_str(&implementation);
-                            if compiled != Some(implementation.clone()) {
-                                println!("{}", implementation);
-                                compiled = Some(implementation);
-                            }
-                        }
-                        let library = device
-                            .new_library_with_source(&shader, &CompileOptions::new())
-                            .map_err(|err_message| err_message.replace("\\n", "\n"))?;
+                        let library =
+                            shader_compiler::compile_shader(&device, |fragment_shader_in_msl| {
+                                if let Some(compiled_before) = &compiled {
+                                    if compiled_before != &fragment_shader_in_msl {
+                                        println!("{}", fragment_shader_in_msl);
+                                        compiled = Some(fragment_shader_in_msl);
+                                    }
+                                }
+                            })?;
 
                         let drawable = layer.next_drawable().ok_or("No drawable")?;
                         let clear_rect_pipeline_state = prepare_pipeline_state(
@@ -224,8 +216,8 @@ fn main() {
     #[allow(unreachable_code)]
     {
         let _ = shader::pixel_color(
-            prelude::Float2 { x: 0.0, y: 0.0 },
-            prelude::Float2 { x: 0.0, y: 0.0 },
+            msl_prelude::Float2 { x: 0.0, y: 0.0 },
+            msl_prelude::Float2 { x: 0.0, y: 0.0 },
         );
     }
 }

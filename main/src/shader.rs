@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::msl_prelude::*;
 
 pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
   // project screen coordinate into world
@@ -7,7 +7,7 @@ pub fn pixel_color(coordinates: Float2, size: Float2) -> Float4 {
   let sd: Float = sdf(p);
   // compute signed distance to a colour
   let col: Float3 = shade(sd);
-  col.float4_2(1.0)
+  (col, 1.0).float4()
 }
 
 fn sdf(p: Float2) -> Float {
@@ -17,7 +17,7 @@ fn sdf(p: Float2) -> Float {
       sd_circle(p, float2(-0.2, 0.3), 0.2),
       sd_circle(p, float2(-0.5, 0.3), 0.3),
     ),
-    sd_box(p, float2(0.2, 0.3), 0.3.float2_1()),
+    sd_box(p, float2(0.2, 0.3), 0.3.float2()),
   )
 }
 
@@ -78,6 +78,6 @@ fn shade(sd: Float) -> Float3 {
   // repeating lines
   col *= 0.8 + 0.2 * (150.0 * sd).cos();
   // White outline at surface
-  col = (1.0 - sd.abs().smoothstep(0.0, 0.01)).mix(col, 1.0.float3_1());
+  col = (1.0 - sd.abs().smoothstep(0.0, 0.01)).mix(col, 1.0.float3());
   col
 }
