@@ -1,12 +1,14 @@
+#![allow(clippy::float_cmp)]
 use crate::msl_prelude::*;
 
 pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
-  // project screen coordinate into world
-  let p: Float2 = screen_to_world(coordinates, input.window_size.float2());
-  // signed distance for scene
-  let sd: Float = sdf((p, 1.0).float3());
-  // compute signed distance to a colour
-  let col: Float3 = shade(sd);
+  let cam_pos = float3(0.0, 0.0, -1.0);
+  let cam_target = float3(0.0, 0.0, 0.0);
+
+  let uv = screen_to_world(coordinates, input.window_size);
+  let ray_dir = get_camera_ray_dir(uv, cam_pos, cam_target);
+
+  let col = render(cam_pos, ray_dir);
   (col, 1.0).float4()
 }
 
@@ -24,6 +26,18 @@ fn sdf(pos: Float3) -> Float {
   //   ),
   //   sd_box(p, float2(0.2, 0.3), 0.3.float2()),
   // )
+}
+
+fn render(ray_origin: Float3, ray_dir: Float3) -> Float3 {
+  let t = cast_ray(ray_origin, ray_dir);
+  if t == -1.0 {
+    // Skybox colour
+    return float3(0.30, 0.36, 0.60) - (ray_dir.y * 0.7);
+  } else {
+    let object_surface_colour = float3(0.4, 0.8, 0.1);
+    let ambient = float3(0.02, 0.021, 0.02);
+    return ambient * object_surface_colour;
+  }
 }
 
 fn cast_ray(ray_origin: Float3, ray_dir: Float3) -> Float {
@@ -90,7 +104,7 @@ fn palette(mut t: Float, a: Float3, b: Float3, c: Float3, d: Float3) -> Float3 {
 }
 
 fn screen_to_world(screen: Float2, size: Float2) -> Float2 {
-  let mut result: Float2 = 2.0 * (screen / size - 0.5);
+  let mut result = 2.0 * (screen / size - 0.5);
   result.x *= size.x / size.y;
   result
 }

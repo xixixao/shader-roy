@@ -104,9 +104,6 @@ impl syn::visit_mut::VisitMut for AstAdapter {
           )
         }
       }
-      syn::Expr::If(syn::ExprIf { cond, .. }) => {
-        *cond = syn::parse_quote!((#cond));
-      }
       _ => {}
     }
 
