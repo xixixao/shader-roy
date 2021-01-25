@@ -102,7 +102,6 @@ enum Context {
   TopLevel,
   ItemFn,
   Stmt,
-  Expr,
   ReturnStmt,
 }
 
@@ -146,7 +145,7 @@ impl syn::visit::Visit<'_> for AstPrinter {
   fn visit_block(&mut self, block: &syn::Block) {
     self.addln("{");
     self.indent(|_self| {
-      if matches!(_self.context, Context::ItemFn) {
+      if matches!(_self.context, Context::ItemFn | Context::ReturnStmt) {
         let num_stmts = block.stmts.len();
         let is_last = |i: usize| i == num_stmts - 1;
         block.stmts.iter().enumerate().for_each(|(i, statement)| {
@@ -200,8 +199,7 @@ impl syn::visit::Visit<'_> for AstPrinter {
   }
 
   fn visit_expr(&mut self, expression: &syn::Expr) {
-    let context = self.context;
-    self.process_with_context(Context::Expr, |_self| {
+    self.process(|_self| {
       match expression {
         syn::Expr::ForLoop(syn::ExprForLoop {
           pat, expr, body, ..
@@ -241,8 +239,9 @@ impl syn::visit::Visit<'_> for AstPrinter {
           }
         }
         syn::Expr::Block(syn::ExprBlock { block, .. }) => _self.visit_block(block),
+        syn::Expr::Return(_) => _self.add(cp(expression)),
         _ => {
-          if matches!(context, Context::ReturnStmt) {
+          if matches!(_self.context, Context::ReturnStmt) {
             _self.addln(format!("return {};", cp(expression)));
           } else {
             _self.add(cp(expression))

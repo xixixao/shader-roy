@@ -1,4 +1,5 @@
 #![allow(clippy::float_cmp)]
+#![allow(dead_code)]
 use crate::msl_prelude::*;
 
 pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
@@ -32,11 +33,11 @@ fn render(ray_origin: Float3, ray_dir: Float3) -> Float3 {
   let t = cast_ray(ray_origin, ray_dir);
   if t == -1.0 {
     // Skybox colour
-    return float3(0.30, 0.36, 0.60) - (ray_dir.y * 0.7);
+    float3(0.30, 0.36, 0.60) - (ray_dir.y * 0.7)
   } else {
     let object_surface_colour = float3(0.4, 0.8, 0.1);
     let ambient = float3(0.02, 0.021, 0.02);
-    return ambient * object_surface_colour;
+    ambient * object_surface_colour
   }
 }
 
@@ -52,6 +53,20 @@ fn cast_ray(ray_origin: Float3, ray_dir: Float3) -> Float {
   }
 
   -1.0
+}
+
+fn calcNormal(pos: Float3) -> Float3 {
+  // Center sample
+  let c = sdf(pos);
+  // Use offset samples to compute gradient / normal
+  let eps_zero = float2(0.001, 0.0);
+  return (float3(
+    // TODO: Create all permutation accessors for all vectors up to 4th dimension
+    sdf(pos + eps_zero.xyy()),
+    sdf(pos + eps_zero.yxy()),
+    sdf(pos + eps_zero.yyx()),
+  ) - c)
+    .normalized();
 }
 
 fn get_camera_ray_dir(uv: Float2, cam_pos: Float3, cam_target: Float3) -> Float3 {
