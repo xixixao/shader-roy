@@ -31,36 +31,14 @@ pub fn print_ast_into_msl(file: syn::File) -> Result<String> {
             .collect::<Result<Vec<_>>>()?
             .join(", "),
           {
+            let num_stmts = fun.block.stmts.len();
+            let is_last = |i: usize| i == num_stmts - 1;
             fun
               .block
               .stmts
               .iter()
-              .map(|statement| {
-                Ok(match statement {
-                  syn::Stmt::Expr(x) => format!("return {};", cp(x)),
-                  syn::Stmt::Local(x) => format!(
-                    "{} {} {};",
-                    match &x.pat {
-                      syn::Pat::Type(syn::PatType { ty, .. }) => {
-                        cp(ty)
-                      }
-                      _ => "auto".to_string(),
-                    },
-                    match match &x.pat {
-                      syn::Pat::Type(syn::PatType { pat, .. }) => pat,
-                      pat => pat,
-                    } {
-                      syn::Pat::Ident(syn::PatIdent { ident, .. }) => cp(ident),
-                      _ => anyhow::bail!("Unsupported assignment pattern"),
-                    },
-                    match &x.init {
-                      Some((_, expression)) => format!("= {}", cp(expression)),
-                      None => "".to_string(),
-                    },
-                  ),
-                  _ => cp(statement),
-                })
-              })
+              .enumerate()
+              .map(|(i, statement)| print_statement(statement, is_last(i)))
               .collect::<Result<Vec<_>>>()?
               .join("\n  ")
           },
@@ -85,6 +63,67 @@ pub fn print_ast_into_msl(file: syn::File) -> Result<String> {
       .collect::<Vec<_>>()
       .join("\n\n"),
   )
+}
+
+fn print_statement(statement: &syn::Stmt, is_last_in_fn: bool) -> Result<String> {
+  Ok(match statement {
+    syn::Stmt::Expr(x) if is_last_in_fn => format!("return {};", cp(x)),
+    syn::Stmt::Local(x) => format!(
+      "{} {} {};",
+      match &x.pat {
+        syn::Pat::Type(syn::PatType { ty, .. }) => {
+          cp(ty)
+        }
+        _ => "auto".to_string(),
+      },
+      match match &x.pat {
+        syn::Pat::Type(syn::PatType { pat, .. }) => pat,
+        pat => pat,
+      } {
+        syn::Pat::Ident(syn::PatIdent { ident, .. }) => cp(ident),
+        _ => anyhow::bail!("Unsupported assignment pattern"),
+      },
+      match &x.init {
+        Some((_, expression)) => format!("= {}", cp(expression)),
+        None => "".to_string(),
+      },
+    ),
+    syn::Stmt::Expr(syn::Expr::ForLoop(syn::ExprForLoop {
+      pat, expr, body, ..
+    })) => match &**expr {
+      syn::Expr::Range(syn::ExprRange {
+        from: Some(from),
+        to: Some(to),
+        limits,
+        ..
+      }) => format!(
+        "for (auto {pat} = {from}; {pat} <{limit} {to}; {pat}++) {body}",
+        pat = cp(pat),
+        from = cp(&*from),
+        to = cp(&*to),
+        limit = if matches!(limits, syn::RangeLimits::Closed(_)) {
+          "="
+        } else {
+          ""
+        },
+        body = print_block(body)?
+      ),
+      _ => anyhow::bail!("Unsupported for loop expression"),
+    },
+    _ => cp(statement),
+  })
+}
+
+fn print_block(block: &syn::Block) -> Result<String> {
+  let syn::Block { stmts, .. } = block;
+  Ok(format!(
+    "{{{}}}",
+    stmts
+      .iter()
+      .map(|stmt| print_statement(stmt, false))
+      .collect::<Result<Vec<_>>>()?
+      .join("\n")
+  ))
 }
 
 #[allow(dead_code)]

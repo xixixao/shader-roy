@@ -60,48 +60,54 @@ impl syn::visit_mut::VisitMut for AstAdapter {
     syn::visit_mut::visit_ident_mut(self, node);
   }
   fn visit_expr_mut(&mut self, node: &mut syn::Expr) {
-    if let syn::Expr::MethodCall(expr) = node {
-      let syn::ExprMethodCall {
-        receiver,
-        args,
-        method,
-        ..
-      } = expr;
-
-      RENAMED_METHODS.iter().for_each(|(old, new)| {
-        if method == old {
-          *method = quote::format_ident!("{}", new);
-        }
-      });
-
-      let method_name = method.to_string();
-
-      *node = if CONSTRUCTOR_METHODS.is_match(&method_name) {
-        if let syn::Expr::Tuple(syn::ExprTuple {
-          elems: unwrapped_args,
+    match node {
+      syn::Expr::MethodCall(expr) => {
+        let syn::ExprMethodCall {
+          receiver,
+          args,
+          method,
           ..
-        }) = &**receiver
-        {
+        } = expr;
+
+        RENAMED_METHODS.iter().for_each(|(old, new)| {
+          if method == old {
+            *method = quote::format_ident!("{}", new);
+          }
+        });
+
+        let method_name = method.to_string();
+
+        *node = if CONSTRUCTOR_METHODS.is_match(&method_name) {
+          if let syn::Expr::Tuple(syn::ExprTuple {
+            elems: unwrapped_args,
+            ..
+          }) = &**receiver
+          {
+            syn::parse_quote!(
+              #method(#unwrapped_args)
+            )
+          } else {
+            syn::parse_quote!(
+              #method(#receiver)
+            )
+          }
+        } else if METHODS_WITH_RECEIVER_LAST.is_match(&method_name) {
           syn::parse_quote!(
-            #method(#unwrapped_args)
+            #method(#args, #receiver)
           )
         } else {
+          let new_args = std::iter::once(&**receiver)
+            .chain(args.iter())
+            .collect::<syn::punctuated::Punctuated<&syn::Expr, syn::Token![,]>>();
           syn::parse_quote!(
-            #method(#receiver)
+            #method(#new_args)
           )
         }
-      } else if METHODS_WITH_RECEIVER_LAST.is_match(&method_name) {
-        syn::parse_quote!(
-          #method(#args, #receiver)
-        )
-      } else {
-        let new_args = std::iter::once(&**receiver)
-          .chain(args.iter())
-          .collect::<syn::punctuated::Punctuated<&syn::Expr, syn::Token![,]>>();
-        syn::parse_quote!(
-          #method(#new_args)
-        )
       }
+      syn::Expr::If(syn::ExprIf { cond, .. }) => {
+        *cond = syn::parse_quote!((#cond));
+      }
+      _ => {}
     }
 
     // Delegate to the default impl to visit nested expressions.

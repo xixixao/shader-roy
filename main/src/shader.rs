@@ -4,16 +4,16 @@ pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
   // project screen coordinate into world
   let p: Float2 = screen_to_world(coordinates, input.window_size.float2());
   // signed distance for scene
-  let sd: Float = sdf(p, input.elapsed_time_secs);
+  let sd: Float = sdf((p, 1.0).float3());
   // compute signed distance to a colour
   let col: Float3 = shade(sd);
   (col, 1.0).float4()
 }
 
-fn sdf(p: Float2, elapsed_time_secs: Float) -> Float {
+fn sdf(pos: Float3) -> Float {
   // Example of the helpers
   // length(uint2(p))
-  0.3
+  sd_sphere(pos, float3(0.0, 0.0, 10.0), 3.0)
   // op_blend(
   //   subtract(
   //     sd_circle(p, float2(elapsed_time_secs.sin(), 0.3), 0.2),
@@ -24,6 +24,20 @@ fn sdf(p: Float2, elapsed_time_secs: Float) -> Float {
   //   ),
   //   sd_box(p, float2(0.2, 0.3), 0.3.float2()),
   // )
+}
+
+fn cast_ray(ray_origin: Float3, ray_dir: Float3) -> Float {
+  let mut t = 0.0; // Stores current distance along ray
+
+  for _ in 0..64 {
+    let res = sdf(ray_origin + ray_dir * t);
+    if res < (0.0001 * t) {
+      return t;
+    }
+    t += res;
+  }
+
+  -1.0
 }
 
 fn get_camera_ray_dir(uv: Float2, cam_pos: Float3, cam_target: Float3) -> Float3 {
@@ -42,7 +56,7 @@ fn subtract(d1: Float, d2: Float) -> Float {
   -d1.max(d2)
 }
 
-fn sd_circle(p: Float2, pos: Float2, radius: Float) -> Float {
+fn sd_sphere(p: Float3, pos: Float3, radius: Float) -> Float {
   p.distance(pos) - radius
 }
 
