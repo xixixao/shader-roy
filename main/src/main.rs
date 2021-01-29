@@ -53,13 +53,14 @@ struct Input {
 
 fn main() -> Result<()> {
     let events_loop = winit::event_loop::EventLoop::new();
-    let window_size = winit::dpi::LogicalSize::new(800, 600);
-
+    let (window_size, window_position) = window_sizing((0.4, 0.4), &events_loop);
     let window = winit::window::WindowBuilder::new()
         .with_inner_size(window_size)
         .with_title("ShaderRoy")
+        .with_always_on_top(true)
         .build(&events_loop)
         .unwrap();
+    window.set_outer_position(window_position);
 
     let device = Device::system_default().expect("no device found");
 
@@ -256,4 +257,25 @@ fn prepare_render_pass_descriptor(descriptor: &RenderPassDescriptorRef, texture:
     color_attachment.set_load_action(MTLLoadAction::Clear);
     color_attachment.set_clear_color(MTLClearColor::new(0.0, 0.0, 0.0, 1.0));
     color_attachment.set_store_action(MTLStoreAction::Store);
+}
+
+fn window_sizing(
+    scale: (f32, f32),
+    events_loop: &winit::event_loop::EventLoop<()>,
+) -> (
+    winit::dpi::LogicalSize<f32>,
+    winit::dpi::LogicalPosition<f32>,
+) {
+    let size_scale: vek::Vec2<_> = scale.into();
+    let screen = events_loop.primary_monitor().unwrap();
+    let screen_size: vek::Vec2<f32> = {
+        let size: (f32, f32) = screen
+            .size()
+            .to_logical::<f32>(screen.scale_factor())
+            .into();
+        size.into()
+    };
+    let window_size = (screen_size * size_scale).into_tuple().into();
+    let window_position = ((screen_size * (vek::Vec2::from(1.0) - size_scale)).into_tuple()).into();
+    (window_size, window_position)
 }
