@@ -76,6 +76,30 @@ let x = 1.0.float2();
 </tr>
 
 <tr>
+<td> Access Constructors </td>
+<td>
+
+vector component selection constructors (`xxy` etc.) allows permutation and/or repetition of components:
+
+```cpp
+auto pos = float2(1.0, 2.0);
+auto foo = pos.yyxy; // float4(2.0, 2.0, 1.0, 2.0)
+```
+
+</td>
+<td>
+
+In Rust you need to call these as methods:
+
+```rust
+let pos = float2(1.0, 2.0);
+let foo = pos.yyxy(); // float4(2.0, 2.0, 1.0, 2.0)
+```
+
+</td>
+</tr>
+
+<tr>
 <td> Functions </td>
 <td>
 

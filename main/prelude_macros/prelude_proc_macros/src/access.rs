@@ -13,7 +13,7 @@ pub fn implement(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
   let trait_method_declarations: Vec<syn::TraitItem> = (dimension..=max_dimensions)
     .flat_map(|dim| {
-      unique_accessor_names(dim, &axes[0..dimension])
+      accessor_names(dim, &axes[0..dimension])
         .into_iter()
         .map(move |name| {
           let ret_type = quote::format_ident!("{}{}", scalar_type_name, dim);
@@ -25,7 +25,7 @@ pub fn implement(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
   let trait_method_definitions: Vec<syn::TraitItem> = (dimension..=max_dimensions)
     .flat_map(|dim| {
-      unique_accessor_names(dim, &axes[0..dimension])
+      accessor_names(dim, &axes[0..dimension])
         .into_iter()
         .map(|name| {
           let ret_type = quote::format_ident!("{}{}", scalar_type_name, dim);
@@ -54,30 +54,21 @@ pub fn implement(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         #(#trait_method_definitions)*
       }
   );
-  eprintln!("{}", result);
+  // eprintln!("{}", result);
   proc_macro::TokenStream::from(result)
 }
 
-fn unique_accessor_names(dims: usize, axes: &str) -> Vec<String> {
-  let mut result = accessor_names(dims, axes);
-  result.sort();
-  result.dedup();
-  result
-}
-
 fn accessor_names(dims: usize, axes: &str) -> Vec<String> {
-  if axes.is_empty() || dims == 0 {
-    return vec!["".to_string()];
+  let mut result = std::collections::HashSet::new();
+  result.insert("".to_string());
+  for _ in 0..dims {
+    let mut next = std::collections::HashSet::new();
+    for ch in axes.chars() {
+      for sofar in result.iter() {
+        next.insert(format!("{}{}", sofar, ch));
+      }
+    }
+    result = next;
   }
-
-  if axes.len() > dims {
-    return (0..axes.len())
-      .flat_map(|i| accessor_names(dims, &format!("{}{}", &axes[0..i], &axes[i + 1..])))
-      .collect();
-  }
-
-  accessor_names(dims - 1, axes)
-    .into_iter()
-    .flat_map(|suffix| axes.chars().map(move |ch| format!("{}{}", ch, suffix)))
-    .collect()
+  result.into_iter().collect()
 }

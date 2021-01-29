@@ -26,6 +26,10 @@ lazy_static::lazy_static! {
 }
 
 lazy_static::lazy_static! {
+  static ref ACCESS_METHODS: regex::Regex = regex::Regex::new(r"^[xywz]{1,4}$").unwrap();
+}
+
+lazy_static::lazy_static! {
   static ref RENAMED_METHODS: std::collections::HashMap<&'static str, &'static str> =
     [
       ("clamped", "clamp"),
@@ -76,7 +80,11 @@ impl syn::visit_mut::VisitMut for AstAdapter {
 
       let method_name = method.to_string();
 
-      *node = if CONSTRUCTOR_METHODS.is_match(&method_name) {
+      *node = if ACCESS_METHODS.is_match(&method_name) {
+        syn::parse_quote!(
+          #receiver.#method
+        )
+      } else if CONSTRUCTOR_METHODS.is_match(&method_name) {
         if let syn::Expr::Tuple(syn::ExprTuple {
           elems: unwrapped_args,
           ..
