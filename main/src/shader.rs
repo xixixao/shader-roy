@@ -2,6 +2,21 @@
 use crate::msl_prelude::*;
 
 pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
+  let num_samples_per_axis = 2;
+  let mut color = 0.0.float4();
+  for y in 0..num_samples_per_axis {
+    for x in 0..num_samples_per_axis {
+      color += sample_color(
+        coordinates + float2(x as Float, y as Float) / (num_samples_per_axis as Float),
+        input,
+      );
+    }
+  }
+  color /= (num_samples_per_axis * num_samples_per_axis) as Float;
+  color
+}
+
+pub fn sample_color(coordinates: Float2, input: PixelInput) -> Float4 {
   let cam_pos = float3(0.0, 0.0, -1.0);
   let cam_target = float3(0.0, 0.0, 0.0);
 

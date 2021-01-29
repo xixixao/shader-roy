@@ -113,33 +113,46 @@ impl syn::visit::Visit<'_> for AstPrinter {
         syn::ReturnType::Type(_, x) => cp(x),
       };
       let name = cp(&fun.sig.ident);
-      let params = fun
-        .sig
-        .inputs
-        .iter()
-        .map(|param| {
-          Ok(match param {
-            syn::FnArg::Typed(syn::PatType { ty, pat, .. }) => match &**pat {
-              syn::Pat::Ident(syn::PatIdent { ident, .. }) => {
-                format!("{} {}", cp(ty), ident)
+      _self.add(format!("{} {} (", ret_type, name));
+
+      let inputs = &fun.sig.inputs;
+      let num_inputs = inputs.len();
+      let is_last = |i: usize| i == num_inputs - 1;
+      for (i, param) in inputs.iter().enumerate() {
+        match param {
+          syn::FnArg::Typed(syn::PatType { ty, pat, .. }) => match &**pat {
+            syn::Pat::Ident(syn::PatIdent { ident, .. }) => {
+              _self.visit_type(ty);
+              _self.add(format!(" {}", ident));
+              if !is_last(i) {
+                _self.add(", ");
               }
-              _ => anyhow::bail!("Unsupported argument type"),
-            },
+            }
             _ => anyhow::bail!("Unsupported argument type"),
-          })
-        })
-        .collect::<Result<Vec<_>>>()?
-        .join(", ");
-      _self.add(format!("{} {} ({})", ret_type, name, params));
+          },
+          _ => anyhow::bail!("Unsupported argument type"),
+        }
+      }
+      _self.add(")");
       match _self.mode {
         PrinterMode::Declarations => {
           _self.output.push_str(";\n");
         }
-        PrinterMode::Definitions => syn::visit::visit_item_fn(_self, fun),
+        PrinterMode::Definitions => _self.visit_block(&*fun.block),
       }
       _self.output.push('\n');
       Ok(())
     });
+  }
+
+  fn visit_type(&mut self, ty: &syn::Type) {
+    match ty {
+      syn::Type::Reference(syn::TypeReference { elem, .. }) => {
+        self.visit_type(elem);
+        self.add("&");
+      }
+      _ => self.add(cp(ty)),
+    }
   }
 
   fn visit_block(&mut self, block: &syn::Block) {

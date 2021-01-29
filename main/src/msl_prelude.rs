@@ -16,6 +16,7 @@ pub use geometric::*;
 pub use math::*;
 pub use types::*;
 
+#[derive(Copy, Clone)]
 pub struct PixelInput {
   /// Window size in physical units (at the native resolution of the display device)
   pub window_size: Float2,

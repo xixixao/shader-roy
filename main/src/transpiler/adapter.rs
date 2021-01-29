@@ -105,6 +105,12 @@ impl syn::visit_mut::VisitMut for AstAdapter {
       }
     }
 
+    // For now we will erase type casts, as properly compiling them
+    // would require a full expression printer
+    if let syn::Expr::Cast(syn::ExprCast { expr, .. }) = node {
+      *node = syn::parse_quote!(#expr);
+    }
+
     // Delegate to the default impl to visit nested expressions.
     syn::visit_mut::visit_expr_mut(self, node);
   }
