@@ -55,18 +55,17 @@ fn cast_ray(ray_origin: Float3, ray_dir: Float3) -> Float {
   -1.0
 }
 
-fn calcNormal(pos: Float3) -> Float3 {
+fn calc_normal(pos: Float3) -> Float3 {
   // Center sample
   let c = sdf(pos);
   // Use offset samples to compute gradient / normal
   let eps_zero = float2(0.001, 0.0);
-  return (float3(
-    // TODO: Create all permutation accessors for all vectors up to 4th dimension
+  (float3(
     sdf(pos + eps_zero.xyy()),
     sdf(pos + eps_zero.yxy()),
     sdf(pos + eps_zero.yyx()),
   ) - c)
-    .normalized();
+    .normalized()
 }
 
 fn get_camera_ray_dir(uv: Float2, cam_pos: Float3, cam_target: Float3) -> Float3 {

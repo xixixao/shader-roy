@@ -42,3 +42,12 @@ macro_rules! implement {
   };
   ($trait:path > $_:tt) => {};
 }
+
+#[macro_export]
+macro_rules! implement_accessors {
+  ($($type:ident),*$(,)?) => {
+    $(
+      $crate::prelude_proc_macros::implement_accessors! { $type }
+    )*
+  };
+}

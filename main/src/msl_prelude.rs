@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod access;
 mod common;
 mod construct;
 mod generic;
@@ -7,6 +8,7 @@ mod geometric;
 mod math;
 mod types;
 
+pub use access::*;
 pub use common::*;
 pub use construct::*;
 pub use generic::*;
