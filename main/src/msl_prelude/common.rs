@@ -42,7 +42,7 @@ pub trait Common: Sized {
 
   fn sign<V>(self) -> Self
   where
-    Self: ScalarOrVector<V>,
+    Self: Map<V>,
     V: num::Signed,
   {
     self.map(num::signum)
@@ -65,7 +65,7 @@ pub trait Common: Sized {
   fn step<Te, Tr, V>(self, edge: Te) -> Tr
   where
     Self: Op<Te, Tr>,
-    Tr: ScalarOrVector<V>,
+    Tr: Map<V>,
     V: PartialOrd,
     V: num::Signed,
     V: std::convert::From<f32>,

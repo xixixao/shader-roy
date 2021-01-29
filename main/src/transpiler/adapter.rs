@@ -39,6 +39,8 @@ lazy_static::lazy_static! {
       ("normalized", "normalize"),
       ("reflected", "reflect"),
       ("refracted", "refract"),
+      ("min", "fmin"),
+      ("max", "fmax"),
     ].iter().cloned().collect();
 }
 
@@ -54,15 +56,6 @@ lazy_static::lazy_static! {
 struct AstAdapter;
 
 impl syn::visit_mut::VisitMut for AstAdapter {
-  fn visit_ident_mut(&mut self, node: &mut syn::Ident) {
-    let name = node.to_string();
-    if name == "min" {
-      *node = quote::format_ident!("fmin");
-    } else if name == "max" {
-      *node = quote::format_ident!("fmax");
-    }
-    syn::visit_mut::visit_ident_mut(self, node);
-  }
   fn visit_expr_mut(&mut self, node: &mut syn::Expr) {
     if let syn::Expr::MethodCall(expr) = node {
       let syn::ExprMethodCall {
@@ -130,6 +123,7 @@ impl syn::visit_mut::VisitMut for AstAdapter {
     syn::visit_mut::visit_type_mut(self, node);
   }
 
+  // Removes trailing commas, since C++ doesn't allow them
   fn visit_expr_call_mut(&mut self, node: &mut syn::ExprCall) {
     let syn::ExprCall { args, .. } = node;
     if args.trailing_punct() {

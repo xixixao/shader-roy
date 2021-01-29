@@ -1,5 +1,4 @@
 #![allow(clippy::float_cmp)]
-#![allow(dead_code)]
 use crate::msl_prelude::*;
 
 pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
@@ -9,35 +8,40 @@ pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
   let uv = screen_to_world(coordinates, input.window_size);
   let ray_dir = get_camera_ray_dir(uv, cam_pos, cam_target);
 
-  let col = render(cam_pos, ray_dir);
-  (col, 1.0).float4()
+  let col = render(cam_pos, ray_dir, input.elapsed_time_secs);
+  let gamma_corrected = col.pow(0.4545);
+  (gamma_corrected, 1.0).float4()
 }
 
 fn sdf(pos: Float3) -> Float {
-  // Example of the helpers
-  // length(uint2(p))
   sd_sphere(pos, float3(0.0, 0.0, 10.0), 3.0)
-  // op_blend(
-  //   subtract(
-  //     sd_circle(p, float2(elapsed_time_secs.sin(), 0.3), 0.2),
-  //     op_u(
-  //       sd_circle(p, float2(-0.5, 0.3), 0.3),
-  //       sd_circle(p, float2(elapsed_time_secs.sin().cos(), 0.3), 0.3),
-  //     ),
-  //   ),
-  //   sd_box(p, float2(0.2, 0.3), 0.3.float2()),
-  // )
 }
 
-fn render(ray_origin: Float3, ray_dir: Float3) -> Float3 {
+fn render(ray_origin: Float3, ray_dir: Float3, elapsed_time_secs: Float) -> Float3 {
   let t = cast_ray(ray_origin, ray_dir);
   if t == -1.0 {
     // Skybox colour
     float3(0.30, 0.36, 0.60) - (ray_dir.y * 0.7)
   } else {
-    let object_surface_colour = float3(0.4, 0.8, 0.1);
-    let ambient = float3(0.02, 0.021, 0.02);
-    ambient * object_surface_colour
+    let pos = ray_origin + ray_dir * t;
+    let normal = calc_normal(pos);
+    let light_dir =
+      float3(elapsed_time_secs.sin(), elapsed_time_secs.cos() + 0.5, -0.5).normalized();
+    let surface_color = float3(0.4, 0.8, 0.1);
+    // L is vector from surface point to light, N is surface normal. N and L must be normalized!
+    let brightness = normal.dot(light_dir).max(0.0);
+    let light_color = float3(1.80, 1.27, 0.99) * brightness;
+    let ambient = float3(0.03, 0.04, 0.1);
+    let diffuse = surface_color * (light_color + ambient);
+    let mut shadow = 0.0;
+    let shadow_ray_origin = pos + normal * 0.01;
+    let shadow_t = cast_ray(shadow_ray_origin, light_dir);
+    if shadow_t >= -1.0 {
+      shadow = 1.0;
+    }
+    shadow.mix(diffuse, diffuse * 0.8)
+    // let N = calc_normal(pos);
+    // N * 0.5.float3() + 0.5.float3()
   }
 }
 
@@ -120,6 +124,7 @@ fn palette(mut t: Float, a: Float3, b: Float3, c: Float3, d: Float3) -> Float3 {
 fn screen_to_world(screen: Float2, size: Float2) -> Float2 {
   let mut result = 2.0 * (screen / size - 0.5);
   result.x *= size.x / size.y;
+  result.y *= -1.0;
   result
 }
 

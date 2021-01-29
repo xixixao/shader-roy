@@ -5,32 +5,13 @@ pub trait ComponentWiseMath {
   fn cos(self) -> Self;
 }
 
-// fn abs<T, V>(x: T) -> T
-// where
-//   T: ScalarOrVector<V>,
-//   V: num::Signed,
-// {
-//   x.map(num::abs)
-// }
+impl<T: Vector<Float>> ComponentWiseMath for T {
+  fn abs(self) -> Self {
+    self.map(|x| x.abs())
+  }
 
-// trait SignedMath<V>: ScalarOrVector<V> + Sized
-// where
-//   V: num::Signed,
-// {
-//   fn absed(self) -> Self {
-//     abs(self)
-//   }
-// }
-
-prelude_macros::implement! {
-  ComponentWiseMath > Float2, Float3, Float4 {
-    fn abs(self) -> Self {
-      self.map(|x| x.abs())
-    }
-
-    fn cos(self) -> Self {
-      self.map(|x| x.cos())
-    }
+  fn cos(self) -> Self {
+    self.map(|x| x.cos())
   }
 }
 
@@ -39,33 +20,27 @@ pub trait MinMax<V = Self, R = V>: Sized {
   fn max(self, b: V) -> R;
 }
 
-// TODO: Use a macro to generate all implementations
-impl MinMax for Float {
-  fn min(self, b: Self) -> Self {
-    vek::ops::partial_min(self, b)
+impl<T, V, R> MinMax<V, R> for T
+where
+  (T, V): Map2<Float, R>,
+{
+  fn min(self, b: V) -> R {
+    (self, b).map2(vek::ops::partial_min)
   }
-
-  fn max(self, b: Self) -> Self {
-    vek::ops::partial_max(self, b)
-  }
-}
-
-impl MinMax<Float2> for Float {
-  fn min(self, b: Float2) -> Float2 {
-    Float2::partial_min(self.into(), b)
-  }
-
-  fn max(self, b: Float2) -> Float2 {
-    Float2::partial_max(self.into(), b)
+  fn max(self, b: V) -> R {
+    (self, b).map2(vek::ops::partial_max)
   }
 }
 
-impl MinMax<Float, Float2> for Float2 {
-  fn min(self, b: Float) -> Float2 {
-    Float2::partial_min(self, b.into())
-  }
+pub trait Math<V = Self, R = V>: Sized {
+  fn pow(self, b: V) -> R;
+}
 
-  fn max(self, b: Float) -> Float2 {
-    Float2::partial_max(self, b.into())
+impl<T, V, R> Math<V, R> for T
+where
+  (T, V): Map2<Float, R>,
+{
+  fn pow(self, b: V) -> R {
+    (self, b).map2(|a, b| a.powf(b))
   }
 }

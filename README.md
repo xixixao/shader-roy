@@ -131,6 +131,8 @@ normalize(x);
 faceforward(x, incident, reference);
 reflect(x, normal);
 refract(x, normal, eta);
+fmin(x, y);
+fmax(x, y);
 ```
 
 </td>
@@ -146,6 +148,8 @@ x.normalized();
 x.face_forward(incident, reference);
 x.reflected(normal);
 x.refracted(normal, eta);
+x.min(y);
+x.max(y);
 ```
 
 </td>

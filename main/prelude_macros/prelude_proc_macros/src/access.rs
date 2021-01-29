@@ -59,16 +59,15 @@ pub fn implement(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 fn accessor_names(dims: usize, axes: &str) -> Vec<String> {
-  let mut result = std::collections::HashSet::new();
-  result.insert("".to_string());
+  let mut result = vec!["".to_string()];
   for _ in 0..dims {
-    let mut next = std::collections::HashSet::new();
+    let mut next = vec![];
     for ch in axes.chars() {
       for sofar in result.iter() {
-        next.insert(format!("{}{}", sofar, ch));
+        next.push(format!("{}{}", sofar, ch));
       }
     }
     result = next;
   }
-  result.into_iter().collect()
+  result
 }
