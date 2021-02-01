@@ -120,6 +120,9 @@ fn main() -> Result<()> {
         .unwrap();
     let mut pipeline_state: Option<RenderPipelineState> = None;
     let start_time = std::time::Instant::now();
+    let mut frame_start_time = std::time::Instant::now();
+    let mut avg_fps = 30.0; // initial guess
+    let mut printed_avg_fps = avg_fps;
 
     events_loop.run(move |event, _, control_flow| {
         autoreleasepool(|| {
@@ -206,6 +209,19 @@ fn main() -> Result<()> {
                         encoder.end_encoding();
                         command_buffer.present_drawable(&drawable);
                         command_buffer.commit();
+
+                        {
+                            let frame_duration =
+                                frame_start_time.elapsed().as_millis().max(1) as f64;
+                            avg_fps = avg_fps + (1000.0 / frame_duration - avg_fps) / 10.0;
+                            if (avg_fps / printed_avg_fps - 1.0).abs() > 0.1 {
+                                print!("\rFPS: {:.0}     ", avg_fps);
+                                use std::io::Write;
+                                let _ = std::io::stdout().lock().flush();
+                                printed_avg_fps = avg_fps;
+                            }
+                            frame_start_time = std::time::Instant::now();
+                        }
                     }
                     _ => {}
                 };

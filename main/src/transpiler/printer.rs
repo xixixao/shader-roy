@@ -19,6 +19,7 @@ struct AstPrinter {
   mode: PrinterMode,
   context: Context,
   indent: String,
+  unique_id: u64,
 }
 
 impl AstPrinter {
@@ -29,6 +30,7 @@ impl AstPrinter {
       mode,
       context: Context::TopLevel,
       indent: String::new(),
+      unique_id: 0,
     };
     use syn::visit::Visit;
     printer.visit_file(file);
@@ -94,6 +96,14 @@ impl AstPrinter {
     processor(self);
     self.indent.pop();
     self.indent.pop();
+  }
+
+  fn current_var(&self) -> String {
+    format!("__var__{}", self.unique_id)
+  }
+
+  fn done_with_var(&mut self) {
+    self.unique_id += 1;
   }
 }
 
@@ -193,6 +203,9 @@ impl syn::visit::Visit<'_> for AstPrinter {
           syn::Pat::Type(syn::PatType { ty, .. }) => {
             cp(ty)
           }
+          syn::Pat::Struct(syn::PatStruct { path, .. }) => {
+            cp(path)
+          }
           _ => "auto".to_string(),
         },
         match match &local.pat {
@@ -200,6 +213,7 @@ impl syn::visit::Visit<'_> for AstPrinter {
           pat => pat,
         } {
           syn::Pat::Ident(syn::PatIdent { ident, .. }) => cp(ident),
+          syn::Pat::Struct(_) => _self.current_var(),
           _ => anyhow::bail!("Unsupported assignment pattern"),
         },
         match &local.init {
@@ -207,6 +221,21 @@ impl syn::visit::Visit<'_> for AstPrinter {
           None => "".to_string(),
         },
       ));
+      if let syn::Pat::Struct(syn::PatStruct { fields, .. }) = &local.pat {
+        let var_name = _self.current_var();
+        for field in fields {
+          if let syn::Member::Named(name) = &field.member {
+            if let syn::Pat::Ident(syn::PatIdent { ident, .. }) = &*field.pat {
+              _self.add(format!("; auto {} = {}.{}", ident, var_name, name));
+            } else {
+              anyhow::bail!("Unsupported struct member in pattern");
+            }
+          } else {
+            anyhow::bail!("Unsupported struct member in pattern");
+          }
+        }
+        _self.done_with_var();
+      }
       Ok(())
     });
   }

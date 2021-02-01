@@ -114,19 +114,16 @@ impl syn::visit_mut::VisitMut for AstAdapter {
     // Delegate to the default impl to visit nested expressions.
     syn::visit_mut::visit_expr_mut(self, node);
   }
-  fn visit_type_mut(&mut self, node: &mut syn::Type) {
-    if let syn::Type::Path(path) = node {
-      if let Some(ident) = path.path.get_ident() {
-        let type_name = ident.to_string();
-        if LOWER_CASED_TYPES.is_match(&type_name) {
-          let new_name = voca_rs::case::lower_first(&type_name);
-          let new_type = syn::Ident::new(&new_name, proc_macro2::Span::call_site());
-          *node = syn::parse_quote!(#new_type);
-        }
+
+  fn visit_path_mut(&mut self, node: &mut syn::Path) {
+    if let Some(ident) = node.get_ident() {
+      let type_name = ident.to_string();
+      if LOWER_CASED_TYPES.is_match(&type_name) {
+        let new_name = voca_rs::case::lower_first(&type_name);
+        let new_type = syn::Ident::new(&new_name, proc_macro2::Span::call_site());
+        *node = syn::parse_quote!(#new_type);
       }
     }
-    // Delegate to the default impl to visit nested expressions.
-    syn::visit_mut::visit_type_mut(self, node);
   }
 
   // Removes trailing commas, since C++ doesn't allow them

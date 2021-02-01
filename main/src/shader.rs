@@ -2,7 +2,7 @@
 use crate::msl_prelude::*;
 
 pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
-  let num_samples_per_axis = 2;
+  let num_samples_per_axis = 3;
   let mut color = 0.0.float4();
   for y in 0..num_samples_per_axis {
     for x in 0..num_samples_per_axis {
@@ -28,17 +28,21 @@ pub fn sample_color(coordinates: Float2, input: PixelInput) -> Float4 {
   (gamma_corrected, 1.0).float4()
 }
 
+fn scene(pos: Float3) -> Float2 {
+  red_plush(sd_sphere(pos, float3(0.0, 0.0, 10.0), 3.0))
+}
+
 fn sdf(pos: Float3) -> Float {
-  sd_sphere(pos, float3(0.0, 0.0, 10.0), 3.0)
+  scene(pos).x
 }
 
 fn render(ray_origin: Float3, ray_dir: Float3, elapsed_time_secs: Float) -> Float3 {
-  let t = cast_ray(ray_origin, ray_dir);
-  if t == -1.0 {
+  let Float2 { x: d, y: material } = cast_ray(ray_origin, ray_dir);
+  if material <= 0.0 {
     // Skybox colour
     float3(0.30, 0.36, 0.60) - (ray_dir.y * 0.7)
   } else {
-    let pos = ray_origin + ray_dir * t;
+    let pos = ray_origin + ray_dir * d;
     let normal = calc_normal(pos);
     let light_dir =
       float3(elapsed_time_secs.sin(), elapsed_time_secs.cos() + 0.5, -0.5).normalized();
@@ -50,7 +54,7 @@ fn render(ray_origin: Float3, ray_dir: Float3, elapsed_time_secs: Float) -> Floa
     let diffuse = surface_color * (light_color + ambient);
     let mut shadow = 0.0;
     let shadow_ray_origin = pos + normal * 0.01;
-    let shadow_t = cast_ray(shadow_ray_origin, light_dir);
+    let shadow_t = cast_ray(shadow_ray_origin, light_dir).x;
     if shadow_t >= -1.0 {
       shadow = 1.0;
     }
@@ -60,18 +64,21 @@ fn render(ray_origin: Float3, ray_dir: Float3, elapsed_time_secs: Float) -> Floa
   }
 }
 
-fn cast_ray(ray_origin: Float3, ray_dir: Float3) -> Float {
+fn cast_ray(ray_origin: Float3, ray_dir: Float3) -> Float2 {
   let mut t = 0.0; // Stores current distance along ray
+  let z_clipping_distance = 20.0;
 
   for _ in 0..64 {
-    let res = sdf(ray_origin + ray_dir * t);
-    if res < (0.0001 * t) {
-      return t;
+    let Float2 { x: d, y: material } = scene(ray_origin + ray_dir * t);
+    if d < (0.0001 * t) {
+      return float2(t, material);
     }
-    t += res;
+    t += d;
+    if t > z_clipping_distance {
+      return sky();
+    }
   }
-
-  -1.0
+  sky()
 }
 
 fn calc_normal(pos: Float3) -> Float3 {
@@ -95,6 +102,14 @@ fn get_camera_ray_dir(uv: Float2, cam_pos: Float3, cam_target: Float3) -> Float3
 
   let f_persp = 2.0;
   (uv.x * cam_right + uv.y * cam_up + cam_forward * f_persp).normalized()
+}
+
+fn sky() -> Float2 {
+  float2(-1.0, 0.0)
+}
+
+fn red_plush(d: Float) -> Float2 {
+  float2(d, 1.0)
 }
 
 // --- SDF utility library
