@@ -1,5 +1,5 @@
 #![allow(clippy::float_cmp)]
-use crate::msl_prelude::*;
+use metal_sl_prelude::*;
 
 pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
   let num_samples_per_axis = 3;

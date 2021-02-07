@@ -7,8 +7,9 @@
 
 extern crate objc;
 
-use anyhow::Result;
-use metal_hot_reload::*;
+mod shader_compiler;
+
+use anyhow::{anyhow, Result};
 
 use cocoa::{appkit::NSView, base::id as cocoa_id};
 
@@ -52,6 +53,12 @@ struct Input {
 }
 
 fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    let shader_file_path = std::path::PathBuf::from(
+        args.get(1)
+            .ok_or_else(|| anyhow!("Missing shader entry point file path argument"))?,
+    );
+
     let events_loop = winit::event_loop::EventLoop::new();
     let (window_size, window_position) = window_sizing((0.4, 0.4), &events_loop);
     let window = winit::window::WindowBuilder::new()
@@ -107,10 +114,7 @@ fn main() -> Result<()> {
     let mut watcher = notify::watcher(tx, std::time::Duration::from_secs(1)).unwrap();
     use notify::Watcher;
     watcher
-        .watch(
-            &*shader_compiler::SHADER_PATH,
-            notify::RecursiveMode::NonRecursive,
-        )
+        .watch(&shader_file_path, notify::RecursiveMode::NonRecursive)
         .unwrap();
     watcher
         .watch(
@@ -147,6 +151,7 @@ fn main() -> Result<()> {
                         let file_event = rx.try_recv();
                         if pipeline_state.is_none() && run_error.is_none() || file_event.is_ok() {
                             let library = shader_compiler::compile_shader(
+                                &shader_file_path,
                                 &device,
                                 |fragment_shader_in_msl| {
                                     println!("{}", fragment_shader_in_msl);
@@ -228,23 +233,11 @@ fn main() -> Result<()> {
                 Ok(())
             })();
             if let Err(err) = res {
-                println!("{}", err);
+                println!("{:?}", err);
                 run_error = Some(());
             }
         });
     });
-    // Validate API
-    #[allow(unreachable_code)]
-    {
-        let _ = shader::pixel_color(
-            msl_prelude::Float2 { x: 0.0, y: 0.0 },
-            msl_prelude::PixelInput {
-                window_size: msl_prelude::Float2 { x: 0.0, y: 0.0 },
-                elapsed_time_secs: 23.23,
-            },
-        );
-        Ok(())
-    }
 }
 
 fn prepare_pipeline_state(

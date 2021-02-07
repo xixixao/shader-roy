@@ -1,0 +1,13 @@
+[package]
+name = "metal_sl_prelude"
+version = "0.1.0"
+authors = ["Michal Srb <xixixao@seznam.cz>"]
+edition = "2018"
+
+[lib]
+path = "src/metal_sl_prelude.rs"
+
+[dependencies]
+prelude_macros = { path="prelude_macros" }
+vek = "0.13.0"
+num = "0.3.1"

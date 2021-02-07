@@ -1,5 +1,5 @@
 [package]
-name = "metal-hot-reload"
+name = "shader_roy"
 version = "0.1.0"
 authors = ["Michal Srb <xixixao@seznam.cz>"]
 edition = "2018"
@@ -11,8 +11,8 @@ name = "two2dsdf"
 crate-type = ["staticlib"]
 
 [dependencies]
-prelude_macros = { path="prelude_macros" }
 rust_to_metal_sl = { path="../rust_to_metal_sl" }
+metal_sl_prelude = { path="../metal_sl_prelude" }
 metal = { git = "https://github.com/xixixao/metal-rs", branch = "fix-errors-new-library" }
 objc = { version = "0.2.4", features = ["objc_exception"] }
 winit = "0.24.0"
@@ -25,5 +25,4 @@ vek = "0.13.0"
 lazy_static = "1.4.0"
 regex = "1.4.3"
 voca_rs = "1.13.0"
-num = "0.3.1"
 notify = "4.0.15"

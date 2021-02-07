@@ -1,5 +1,8 @@
 [workspace]
-default-members=["main"]
+default-members=["shader_roy"]
 members = [
-    "main"
+    "shader_roy",
+    "rust_to_metal_sl",
+    "metal_sl_prelude",
+    "example_raymarching",
 ]

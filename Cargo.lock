@@ -270,6 +270,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
+name = "example-raymarching"
+version = "0.1.0"
+dependencies = [
+ "metal_sl_prelude",
+]
+
+[[package]]
 name = "filetime"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -487,25 +494,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "metal-hot-reload"
+name = "metal_sl_prelude"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "cocoa",
- "lazy_static",
- "metal",
- "notify",
  "num",
- "objc",
  "prelude_macros",
- "proc-macro2",
- "quote",
- "regex",
- "rust_to_metal_sl",
- "syn",
  "vek",
- "voca_rs",
- "winit",
 ]
 
 [[package]]
@@ -988,6 +982,27 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "shader_roy"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cocoa",
+ "lazy_static",
+ "metal",
+ "metal_sl_prelude",
+ "notify",
+ "objc",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rust_to_metal_sl",
+ "syn",
+ "vek",
+ "voca_rs",
+ "winit",
 ]
 
 [[package]]

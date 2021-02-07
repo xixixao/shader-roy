@@ -1,7 +1,7 @@
 // Ported from
 // https://github.com/electricsquare/raymarching-workshop#2d-sdf-demo
 
-use metal_hot_reload::msl_prelude::*;
+use metal_sl_prelude::*;
 
 pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
   // project screen coordinate into world
