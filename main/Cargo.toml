@@ -12,6 +12,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 prelude_macros = { path="prelude_macros" }
+rust_to_metal_sl = { path="../rust_to_metal_sl" }
 metal = { git = "https://github.com/xixixao/metal-rs", branch = "fix-errors-new-library" }
 objc = { version = "0.2.4", features = ["objc_exception"] }
 winit = "0.24.0"

@@ -14,8 +14,7 @@ where
   let mut shader = shader_prelude;
   {
     let fragment_shader_in_rust = std::fs::read_to_string(&*SHADER_PATH)?;
-    let fragment_shader_in_msl =
-      crate::transpiler::transpile_rust_to_msl(&fragment_shader_in_rust)?;
+    let fragment_shader_in_msl = rust_to_metal_sl::transpile(&fragment_shader_in_rust)?;
     shader.push_str(&fragment_shader_in_msl);
     on_compiled(fragment_shader_in_msl);
   }
