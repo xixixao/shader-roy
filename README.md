@@ -11,12 +11,12 @@ ShaderToy clone in Rust, currently supporting MacOS.
 ## Instructions
 
 1. clone this repo
-2. run `cargo run`
-3. edit `shader.rs`
+2. run `cargo run example_raymarching`
+3. edit `example_raymarching/src/example_raymarching.rs`
 
 `/examples` directory includes valid shaders you can copy over into `shader.rs`.
 
-Why are we using Rust for the shader? Better syntax, better editor integration and because it's a fun hack. It should feel exactly like writing Rust (which feels awesome!). Unlike in ShaderToy the Rust typechecker warns you immediately about most errors you'd might make.
+Why are we using Rust for the shader? Better syntax, better editor integration and because it's a fun hack. It should feel exactly like writing Rust (which feels awesome!). Unlike in ShaderToy the Rust typechecker warns you immediately about most errors you might make.
 
 ## Metal Shading Rust Language
 
