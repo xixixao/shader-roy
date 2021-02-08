@@ -8,8 +8,9 @@
 extern crate objc;
 
 mod shader_compiler;
+mod shader_file_path_arg;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use cocoa::{appkit::NSView, base::id as cocoa_id};
 
@@ -53,11 +54,7 @@ struct Input {
 }
 
 fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().collect();
-    let shader_file_path = std::path::PathBuf::from(
-        args.get(1)
-            .ok_or_else(|| anyhow!("Missing shader entry point file path argument"))?,
-    );
+    let shader_file_path = shader_file_path_arg::get_path()?;
 
     let events_loop = winit::event_loop::EventLoop::new();
     let (window_size, window_position) = window_sizing((0.4, 0.4), &events_loop);

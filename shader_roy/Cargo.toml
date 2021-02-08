@@ -17,12 +17,9 @@ metal = { git = "https://github.com/xixixao/metal-rs", branch = "fix-errors-new-
 objc = { version = "0.2.4", features = ["objc_exception"] }
 winit = "0.24.0"
 cocoa = "0.24.0"
-syn = { version = "1.0.58", features = ["full", "visit-mut"]}
-quote = "1.0.8"
 anyhow = "1.0.38"
-proc-macro2 = "1.0.24"
 vek = "0.13.0"
 lazy_static = "1.4.0"
-regex = "1.4.3"
-voca_rs = "1.13.0"
 notify = "4.0.15"
+toml = "0.5.8"
+path-absolutize = "3.0.6"
