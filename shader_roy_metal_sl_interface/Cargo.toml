@@ -1,0 +1,12 @@
+[package]
+name = "shader_roy_metal_sl_interface"
+version = "0.1.0"
+authors = ["Michal Srb <xixixao@seznam.cz>"]
+edition = "2018"
+
+[lib]
+path = "src/shader_roy_metal_sl_interface.rs"
+
+[dependencies]
+metal_sl_prelude = { path="../metal_sl_prelude" }
+

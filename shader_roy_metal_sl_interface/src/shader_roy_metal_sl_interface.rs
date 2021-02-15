@@ -1,21 +1,6 @@
-#![allow(dead_code)]
+pub use metal_sl_prelude::*;
 
-mod access;
-mod common;
-mod construct;
-mod generic;
-mod geometric;
-mod math;
-mod types;
-
-pub use access::*;
-pub use common::*;
-pub use construct::*;
-pub use generic::*;
-pub use geometric::*;
-pub use math::*;
-pub use types::*;
-
+/// This is the `constant` information passed to the pixel shader from ShaderRoy on each frame.
 #[derive(Copy, Clone)]
 pub struct Input {
   /// Window size in physical units (at the native resolution of the display device)

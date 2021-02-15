@@ -1,5 +1,5 @@
 [package]
-name = "example-raymarching"
+name = "example_raymarching"
 version = "0.1.0"
 authors = ["Michal Srb <xixixao@seznam.cz>"]
 edition = "2018"
@@ -8,5 +8,5 @@ edition = "2018"
 path = "src/example_raymarching.rs"
 
 [dependencies]
-metal_sl_prelude = { path="../metal_sl_prelude" }
+shader_roy_metal_sl_interface = { path="../shader_roy_metal_sl_interface" }
 

@@ -24,32 +24,24 @@ use winit::{
     event_loop::ControlFlow,
 };
 
+// Used for setting up vertex shader
 #[repr(C)]
-struct Rect {
+struct Float4 {
     pub x: f32,
     pub y: f32,
     pub w: f32,
     pub h: f32,
 }
 
+// Used for passing per-frame input to pixel shader
 #[repr(C)]
-struct Color {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
-    pub a: f32,
+struct Float2 {
+    pub x: f32,
+    pub y: f32,
 }
-
-#[repr(C)]
-struct ClearRect {
-    pub rect: Rect,
-    pub color: Color,
-}
-
 #[repr(C)]
 struct Input {
-    pub width: u32,
-    pub height: u32,
+    pub window_size: Float2,
     pub elapsed_time_secs: f32,
 }
 
@@ -82,24 +74,16 @@ fn main() -> Result<()> {
     let draw_size = window.inner_size();
     layer.set_drawable_size(CGSize::new(draw_size.width as f64, draw_size.height as f64));
 
-    let vector_rect = vec![ClearRect {
-        rect: Rect {
-            x: -1.0,
-            y: -1.0,
-            w: 2.0,
-            h: 2.0,
-        },
-        color: Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 1.0,
-        },
+    let vector_rect = vec![Float4 {
+        x: -1.0,
+        y: -1.0,
+        w: 2.0,
+        h: 2.0,
     }];
 
     let vector_buffer = device.new_buffer_with_data(
         vector_rect.as_ptr() as *const _,
-        mem::size_of::<ClearRect>() as u64,
+        mem::size_of::<Float4>() as u64,
         MTLResourceOptions::CPUCacheModeDefaultCache | MTLResourceOptions::StorageModeManaged,
     );
 
@@ -157,8 +141,8 @@ fn main() -> Result<()> {
                             pipeline_state = Some(prepare_pipeline_state(
                                 &device,
                                 &library,
-                                "clear_rect_vertex",
-                                "clear_rect_fragment",
+                                "vertex_shader",
+                                "fragment_shader",
                             )?);
                         }
                         if pipeline_state.is_none() {
@@ -195,8 +179,10 @@ fn main() -> Result<()> {
                             0,
                             std::mem::size_of::<Input>() as u64,
                             &Input {
-                                width: physical_size.width,
-                                height: physical_size.height,
+                                window_size: Float2 {
+                                    x: physical_size.width as f32,
+                                    y: physical_size.height as f32,
+                                },
                                 elapsed_time_secs: start_time.elapsed().as_secs_f32(),
                             } as *const Input as *const _,
                         );

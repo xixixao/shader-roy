@@ -3,7 +3,7 @@
 
 use metal_sl_prelude::*;
 
-pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
+pub fn pixel_color(coordinates: Float2, input: Input) -> Float4 {
   // project screen coordinate into world
   let p: Float2 = screen_to_world(coordinates, input.window_size);
   // signed distance for scene

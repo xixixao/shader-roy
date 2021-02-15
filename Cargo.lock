@@ -270,10 +270,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
-name = "example-raymarching"
+name = "example_raymarching"
 version = "0.1.0"
 dependencies = [
- "metal_sl_prelude",
+ "shader_roy_metal_sl_interface",
 ]
 
 [[package]]
@@ -1018,6 +1018,13 @@ dependencies = [
  "toml",
  "vek",
  "winit",
+]
+
+[[package]]
+name = "shader_roy_metal_sl_interface"
+version = "0.1.0"
+dependencies = [
+ "metal_sl_prelude",
 ]
 
 [[package]]

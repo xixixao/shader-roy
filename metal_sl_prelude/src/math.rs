@@ -34,6 +34,7 @@ where
 
 pub trait Math<V = Self, R = V>: Sized {
   fn pow(self, b: V) -> R;
+  fn fmod(self, b: V) -> R;
 }
 
 impl<T, V, R> Math<V, R> for T
@@ -42,5 +43,8 @@ where
 {
   fn pow(self, b: V) -> R {
     (self, b).map2(|a, b| a.powf(b))
+  }
+  fn fmod(self, b: V) -> R {
+    (self, b).map2(|a, b| a % b)
   }
 }

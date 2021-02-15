@@ -1,7 +1,7 @@
 #![allow(clippy::float_cmp)]
-use metal_sl_prelude::*;
+use shader_roy_metal_sl_interface::*;
 
-pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
+pub fn pixel_color(coordinates: Float2, input: Input) -> Float4 {
   let num_samples_per_axis = 3;
   let mut color = 0.0.float4();
   for y in 0..num_samples_per_axis {
@@ -16,7 +16,7 @@ pub fn pixel_color(coordinates: Float2, input: PixelInput) -> Float4 {
   color
 }
 
-pub fn sample_color(coordinates: Float2, input: PixelInput) -> Float4 {
+pub fn sample_color(coordinates: Float2, input: Input) -> Float4 {
   let cam_pos = float3(0.0, 0.0, -1.0);
   let cam_target = float3(0.0, 0.0, 0.0);
 
@@ -29,7 +29,22 @@ pub fn sample_color(coordinates: Float2, input: PixelInput) -> Float4 {
 }
 
 fn scene(pos: Float3) -> Float2 {
-  red_plush(sd_sphere(pos, float3(0.0, 0.0, 10.0), 3.0))
+  let grid = repeat(pos + 0.05, 0.2, float3(2.0, 2.0, 2.0));
+  red_plush(sd_sphere(grid, float3(0.0, 0.0, 0.0), 0.01))
+
+  // red_plush(sd_sphere(q, float3(0.0, 0.0, 0.0), 0.05)).min(sd_sphere(
+  //   grid,
+  //   float3(0.0, 0.0, 0.0),
+  //   0.01,
+  // ))
+}
+
+fn infinite_repeat(pos: Float3, period: Float) -> Float3 {
+  (pos.abs() + 0.5 * period).fmod(period) - 0.5 * period
+}
+
+fn repeat(pos: Float3, period: Float, limit: Float3) -> Float3 {
+  pos - period * (pos / period).round().clamped(-limit, limit)
 }
 
 fn sdf(pos: Float3) -> Float {
@@ -66,7 +81,7 @@ fn render(ray_origin: Float3, ray_dir: Float3, elapsed_time_secs: Float) -> Floa
 
 fn cast_ray(ray_origin: Float3, ray_dir: Float3) -> Float2 {
   let mut t = 0.0; // Stores current distance along ray
-  let z_clipping_distance = 20.0;
+  let z_clipping_distance = 6.0;
 
   for _ in 0..64 {
     let Float2 { x: d, y: material } = scene(ray_origin + ray_dir * t);
