@@ -1,14 +1,13 @@
 #![allow(clippy::float_cmp)]
 use shader_roy_metal_sl_interface::*;
 
-pub fn pixel_color(coordinates: Float2, input: Input) -> Float4 {
+pub fn pixel_color(coordinates: Float2) -> Float4 {
   let num_samples_per_axis = 3;
   let mut color = 0.0.float4();
   for y in 0..num_samples_per_axis {
     for x in 0..num_samples_per_axis {
       color += sample_color(
         coordinates + float2(x as Float, y as Float) / (num_samples_per_axis as Float),
-        input,
       );
     }
   }
@@ -16,14 +15,14 @@ pub fn pixel_color(coordinates: Float2, input: Input) -> Float4 {
   color
 }
 
-pub fn sample_color(coordinates: Float2, input: Input) -> Float4 {
+pub fn sample_color(coordinates: Float2) -> Float4 {
   let cam_pos = float3(0.0, 0.0, -1.0);
   let cam_target = float3(0.0, 0.0, 0.0);
 
-  let uv = screen_to_world(coordinates, input.window_size);
+  let uv = screen_to_world(coordinates, INPUT.window_size);
   let ray_dir = get_camera_ray_dir(uv, cam_pos, cam_target);
 
-  let col = render(cam_pos, ray_dir, input.elapsed_time_secs);
+  let col = render(cam_pos, ray_dir, INPUT.elapsed_time_secs);
   let gamma_corrected = col.pow(0.4545);
   (gamma_corrected, 1.0).float4()
 }

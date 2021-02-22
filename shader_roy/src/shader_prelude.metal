@@ -10,7 +10,7 @@ typedef struct {
 } Input;
 
 // The function that has to be implemented by each ShaderRoy shader.
-float4 pixel_color(float2 coordinates, Input input);
+float4 pixel_color(float2 coordinates, constant Input& input);
 
 // The vertex shader
 float2 rect_vert(float4 rect, uint vid);
@@ -24,7 +24,7 @@ vertex float4 vertex_shader(
 // The fragment shader
 fragment float4 fragment_shader(
     float4 in [[position]],
-    constant Input &input [[ buffer(0) ]]
+    constant Input& input [[ buffer(0) ]]
 ) {
     return pixel_color(float2(in.x, in.y), input);
 }

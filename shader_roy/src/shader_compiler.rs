@@ -18,7 +18,14 @@ where
   {
     let fragment_shader_in_rust = std::fs::read_to_string(shader_file_path)
       .with_context(|| format!("Failed to read shader from `{:?}`", shader_file_path))?;
-    let fragment_shader_in_msl = rust_to_metal_sl::transpile(&fragment_shader_in_rust)?;
+    let fragment_shader_in_msl = rust_to_metal_sl::transpile(
+      &fragment_shader_in_rust,
+      rust_to_metal_sl::EnhanceConfig {
+        entry_point_fn_name: "pixel_color".to_owned(),
+        constant_name: "INPUT".to_owned(),
+        param_type: "Input".to_owned(),
+      },
+    )?;
     shader.push_str(&fragment_shader_in_msl);
     on_compiled(fragment_shader_in_msl);
   }

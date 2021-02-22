@@ -90,24 +90,13 @@ fn main() -> Result<()> {
     let command_queue = device.new_command_queue();
     let mut run_error: Option<()> = None;
 
-    // Watch source file
-    let (tx, rx) = std::sync::mpsc::channel();
-    let mut watcher = notify::watcher(tx, std::time::Duration::from_secs(1)).unwrap();
-    use notify::Watcher;
-    watcher
-        .watch(&shader_file_path, notify::RecursiveMode::NonRecursive)
-        .unwrap();
-    watcher
-        .watch(
-            &*shader_compiler::SHADER_PRELUDE_PATH,
-            notify::RecursiveMode::NonRecursive,
-        )
-        .unwrap();
+    let file_events_receiver = watch_shader_sources(
+        std::time::Duration::from_secs(1),
+        vec![&shader_file_path, &*shader_compiler::SHADER_PRELUDE_PATH],
+    );
     let mut pipeline_state: Option<RenderPipelineState> = None;
-    let start_time = std::time::Instant::now();
-    let mut frame_start_time = std::time::Instant::now();
-    let mut avg_fps = 30.0; // initial guess
-    let mut printed_avg_fps = avg_fps;
+    let mut frame_rate_reporter = FrameRateReporter::new();
+    let input_computer = InputComputer::new();
 
     events_loop.run(move |event, _, control_flow| {
         autoreleasepool(|| {
@@ -129,7 +118,7 @@ fn main() -> Result<()> {
                         window.request_redraw();
                     }
                     Event::RedrawRequested(_) => {
-                        let file_event = rx.try_recv();
+                        let file_event = file_events_receiver.try_recv();
                         if pipeline_state.is_none() && run_error.is_none() || file_event.is_ok() {
                             let library = shader_compiler::compile_shader(
                                 &shader_file_path,
@@ -148,13 +137,6 @@ fn main() -> Result<()> {
                         if pipeline_state.is_none() {
                             return Ok(());
                         }
-                        // let size_for_shader_buffer = device.new_buffer_with_data(
-                        //     vec![physical_size.width as u32, physical_size.height as u32].as_ptr()
-                        //         as *const _,
-                        //     mem::size_of::<u32>() as u64,
-                        //     MTLResourceOptions::CPUCacheModeDefaultCache
-                        //         | MTLResourceOptions::StorageModeManaged,
-                        // );
 
                         let render_pass_descriptor = RenderPassDescriptor::new();
 
@@ -165,26 +147,12 @@ fn main() -> Result<()> {
                         let encoder =
                             command_buffer.new_render_command_encoder(&render_pass_descriptor);
 
-                        let physical_size = window.inner_size();
-                        encoder.set_scissor_rect(MTLScissorRect {
-                            x: 0,
-                            y: 0,
-                            width: physical_size.width as _,
-                            height: physical_size.height as _,
-                        });
-
                         encoder.set_render_pipeline_state(pipeline_state.as_ref().unwrap());
                         encoder.set_vertex_buffer(0, Some(&vector_buffer), 0);
                         encoder.set_fragment_bytes(
                             0,
                             std::mem::size_of::<Input>() as u64,
-                            &Input {
-                                window_size: Float2 {
-                                    x: physical_size.width as f32,
-                                    y: physical_size.height as f32,
-                                },
-                                elapsed_time_secs: start_time.elapsed().as_secs_f32(),
-                            } as *const Input as *const _,
+                            &input_computer.get_input(&window) as *const Input as *const _,
                         );
                         encoder.draw_primitives_instanced(
                             metal::MTLPrimitiveType::TriangleStrip,
@@ -192,24 +160,12 @@ fn main() -> Result<()> {
                             4,
                             1,
                         );
-                        // encoder.set_fragment_buffer(0, Some(&size_for_shader_buffer), 0);
 
                         encoder.end_encoding();
                         command_buffer.present_drawable(&drawable);
                         command_buffer.commit();
 
-                        {
-                            let frame_duration =
-                                frame_start_time.elapsed().as_millis().max(1) as f64;
-                            avg_fps = avg_fps + (1000.0 / frame_duration - avg_fps) / 10.0;
-                            if (avg_fps / printed_avg_fps - 1.0).abs() > 0.1 {
-                                print!("\rFPS: {:.0}     ", avg_fps);
-                                use std::io::Write;
-                                let _ = std::io::stdout().lock().flush();
-                                printed_avg_fps = avg_fps;
-                            }
-                            frame_start_time = std::time::Instant::now();
-                        }
+                        frame_rate_reporter.calculate_frame_rate_and_maybe_report();
                     }
                     _ => {}
                 };
@@ -221,6 +177,29 @@ fn main() -> Result<()> {
             }
         });
     });
+}
+
+struct InputComputer {
+    start_time: std::time::Instant,
+}
+
+impl InputComputer {
+    fn new() -> Self {
+        Self {
+            start_time: std::time::Instant::now(),
+        }
+    }
+
+    fn get_input(&self, window: &winit::window::Window) -> Input {
+        let physical_size = window.inner_size();
+        Input {
+            window_size: Float2 {
+                x: physical_size.width as f32,
+                y: physical_size.height as f32,
+            },
+            elapsed_time_secs: self.start_time.elapsed().as_secs_f32(),
+        }
+    }
 }
 
 fn prepare_pipeline_state(
@@ -270,4 +249,70 @@ fn window_sizing(
     let window_size = (screen_size * size_scale).into_tuple().into();
     let window_position = ((screen_size * (vek::Vec2::from(1.0) - size_scale)).into_tuple()).into();
     (window_size, window_position)
+}
+
+fn watch_shader_sources(
+    delay: std::time::Duration,
+    source_file_paths: Vec<&std::path::PathBuf>,
+) -> std::sync::mpsc::Receiver<notify::DebouncedEvent> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let mut watcher = notify::watcher(tx, delay).unwrap();
+    use notify::Watcher;
+    for path in source_file_paths.iter() {
+        watcher
+            .watch(path, notify::RecursiveMode::NonRecursive)
+            .unwrap();
+    }
+    rx
+}
+
+struct FrameRateReporter {
+    frame_start_time: std::time::Instant,
+    frame_rate_in_frames_per_sec: f64,
+    rate_limiter: RateLimiter,
+}
+
+impl FrameRateReporter {
+    fn new() -> Self {
+        Self {
+            frame_start_time: std::time::Instant::now(),
+            frame_rate_in_frames_per_sec: 30.0, // initial guess
+            rate_limiter: RateLimiter::new(std::time::Duration::from_secs(1)),
+        }
+    }
+
+    fn calculate_frame_rate_and_maybe_report(&mut self) {
+        let frame_duration = self.frame_start_time.elapsed().as_millis().max(1) as f64;
+        let num_frames_averaged = 10.0;
+        self.frame_rate_in_frames_per_sec +=
+            (1000.0 / frame_duration - self.frame_rate_in_frames_per_sec) / num_frames_averaged;
+        let frame_rate_in_frames_per_sec = self.frame_rate_in_frames_per_sec;
+        self.rate_limiter.maybe_call(|| {
+            print!("\rFPS: {:.0}     ", frame_rate_in_frames_per_sec);
+            use std::io::Write;
+            let _ = std::io::stdout().lock().flush();
+        });
+        self.frame_start_time = std::time::Instant::now();
+    }
+}
+
+struct RateLimiter {
+    delay: std::time::Duration,
+    last_call_time: std::time::Instant,
+}
+
+impl RateLimiter {
+    fn new(delay: std::time::Duration) -> Self {
+        Self {
+            delay,
+            last_call_time: std::time::Instant::now(),
+        }
+    }
+
+    fn maybe_call<F: FnOnce()>(&mut self, func: F) {
+        if self.last_call_time.elapsed() > self.delay {
+            func();
+            self.last_call_time = std::time::Instant::now();
+        }
+    }
 }

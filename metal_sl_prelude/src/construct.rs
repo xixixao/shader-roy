@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn float2(x: f32, y: f32) -> Float2 {
+pub const fn float2(x: f32, y: f32) -> Float2 {
   Float2 { x, y }
 }
 

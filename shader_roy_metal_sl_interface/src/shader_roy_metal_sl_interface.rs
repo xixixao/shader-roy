@@ -8,3 +8,8 @@ pub struct Input {
   /// Time since starting the program, in fractions of seconds.
   pub elapsed_time_secs: Float,
 }
+
+pub const INPUT: Input = Input {
+  window_size: float2(0.0, 0.0),
+  elapsed_time_secs: 0.0,
+};

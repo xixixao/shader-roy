@@ -130,8 +130,17 @@ impl syn::visit::Visit<'_> for AstPrinter {
       let is_last = |i: usize| i == num_inputs - 1;
       for (i, param) in inputs.iter().enumerate() {
         match param {
-          syn::FnArg::Typed(syn::PatType { ty, pat, .. }) => match &**pat {
+          syn::FnArg::Typed(syn::PatType { ty, pat, attrs, .. }) => match &**pat {
             syn::Pat::Ident(syn::PatIdent { ident, .. }) => {
+              attrs.iter().for_each(|attr| {
+                if cp(&attr.path) == "address_space" {
+                  if let Ok(syn::Meta::List(syn::MetaList { nested, .. })) = attr.parse_meta() {
+                    if let Some(syn::NestedMeta::Meta(syn::Meta::Path(name))) = nested.first() {
+                      _self.add(format!("{} ", cp(name)));
+                    }
+                  }
+                }
+              });
               _self.visit_type(ty);
               _self.add(format!(" {}", ident));
               if !is_last(i) {
