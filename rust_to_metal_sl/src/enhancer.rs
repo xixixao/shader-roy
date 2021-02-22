@@ -78,23 +78,26 @@ fn check_is_using(
   }
   is_being_processed.insert(fn_name.to_owned());
   if let Some(item_fn) = fn_items.get(fn_name) {
-    let is_using_directly_or_any_called_fn_is_using =
-      ConstantDetector::contains_contant_access(item_fn, &properties.constant_name)
-        || CalledFnsCollector::called_fns(item_fn)
-          .iter()
-          .any(|called_fn| {
-            check_is_using(
-              called_fn,
-              fn_items,
-              is_using,
-              is_being_processed,
-              properties,
-            );
-            *is_using.get(called_fn).unwrap_or(&false)
-          });
+    // It's important to not short-circuit in any of this code
+    #[allow(clippy::unnecessary_fold)]
+    let is_any_called_fn_using = CalledFnsCollector::called_fns(item_fn)
+      .iter()
+      .map(|called_fn| {
+        check_is_using(
+          called_fn,
+          fn_items,
+          is_using,
+          is_being_processed,
+          properties,
+        );
+        *is_using.get(called_fn).unwrap_or(&false)
+      })
+      .fold(false, |so_far, is_called_using| so_far || is_called_using);
+    let is_using_directly =
+      ConstantDetector::contains_contant_access(item_fn, &properties.constant_name);
     is_using.insert(
       fn_name.to_owned(),
-      is_using_directly_or_any_called_fn_is_using,
+      is_any_called_fn_using || is_using_directly,
     );
   }
 }
@@ -121,8 +124,10 @@ impl syn::visit::Visit<'_> for ConstantDetector {
     if let syn::Expr::Path(syn::ExprPath { path, .. }) = &*field_access.base {
       if cp(path) == self.constant_name {
         self.result = true;
+        return;
       }
     }
+    syn::visit::visit_expr_field(self, field_access);
   }
 }
 

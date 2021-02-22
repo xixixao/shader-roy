@@ -4,11 +4,11 @@ pub const fn float2(x: f32, y: f32) -> Float2 {
   Float2 { x, y }
 }
 
-pub fn float3(x: f32, y: f32, z: f32) -> Float3 {
+pub const fn float3(x: f32, y: f32, z: f32) -> Float3 {
   Float3 { x, y, z }
 }
 
-pub fn float4(x: f32, y: f32, z: f32, w: f32) -> Float4 {
+pub const fn float4(x: f32, y: f32, z: f32, w: f32) -> Float4 {
   Float4 { x, y, z, w }
 }
 

@@ -24,25 +24,31 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-// Used for setting up vertex shader
+// Used for passing per-frame input to pixel shader and for setting up the vertex shader
 #[repr(C)]
-struct Float4 {
-    pub x: f32,
-    pub y: f32,
-    pub w: f32,
-    pub h: f32,
-}
-
-// Used for passing per-frame input to pixel shader
-#[repr(C)]
+#[derive(Copy, Clone)]
 struct Float2 {
     pub x: f32,
     pub y: f32,
 }
 #[repr(C)]
+#[derive(Copy, Clone)]
+struct Float4 {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+    pub w: f32,
+}
+#[repr(C)]
 struct Input {
-    pub window_size: Float2,
-    pub elapsed_time_secs: f32,
+    window_size: Float2,
+    window_position: Float2,
+    cursor_position: Float2,
+    is_cursor_inside_window: f32,
+    elapsed_time_secs: f32,
+    elapsed_time_since_last_frame_secs: f32,
+    frame_count: f32,
+    year_month_day_tz: Float4,
 }
 
 fn main() -> Result<()> {
@@ -77,8 +83,8 @@ fn main() -> Result<()> {
     let vector_rect = vec![Float4 {
         x: -1.0,
         y: -1.0,
+        z: 2.0,
         w: 2.0,
-        h: 2.0,
     }];
 
     let vector_buffer = device.new_buffer_with_data(
@@ -90,7 +96,8 @@ fn main() -> Result<()> {
     let command_queue = device.new_command_queue();
     let mut run_error: Option<()> = None;
 
-    let file_events_receiver = watch_shader_sources(
+    // Watcher needed otherwise it gets dropped too early
+    let (_watcher, file_events_receiver) = watch_shader_sources(
         std::time::Duration::from_secs(1),
         vec![
             &shader_file_path,
@@ -100,7 +107,7 @@ fn main() -> Result<()> {
     );
     let mut pipeline_state: Option<RenderPipelineState> = None;
     let mut frame_rate_reporter = FrameRateReporter::new();
-    let input_computer = InputComputer::new();
+    let mut input_computer = InputComputer::new();
 
     events_loop.run(move |event, _, control_flow| {
         autoreleasepool(|| {
@@ -115,6 +122,18 @@ fn main() -> Result<()> {
                                 size.width as f64,
                                 size.height as f64,
                             ));
+                        }
+                        WindowEvent::CursorEntered { .. } => {
+                            input_computer.set_cursor_presence(true);
+                        }
+                        WindowEvent::CursorLeft { .. } => {
+                            input_computer.set_cursor_presence(false);
+                        }
+                        WindowEvent::CursorMoved { position, .. } => {
+                            input_computer.set_cursor_position(position);
+                        }
+                        WindowEvent::MouseInput { state, button, .. } => {
+                            input_computer.set_cursor_click_state(button, state)
                         }
                         _ => (),
                     },
@@ -156,7 +175,7 @@ fn main() -> Result<()> {
                         encoder.set_fragment_bytes(
                             0,
                             std::mem::size_of::<Input>() as u64,
-                            &input_computer.get_input(&window) as *const Input as *const _,
+                            &input_computer.current_input(&window) as *const Input as *const _,
                         );
                         encoder.draw_primitives_instanced(
                             metal::MTLPrimitiveType::TriangleStrip,
@@ -185,24 +204,94 @@ fn main() -> Result<()> {
 
 struct InputComputer {
     start_time: std::time::Instant,
+    last_frame_time: std::time::Instant,
+    frame_count: u64,
+    cursor_position: Float2,
+    is_cursor_inside_window: bool,
+    pointer_device_state: Float2,
+    date: Float4,
 }
 
 impl InputComputer {
     fn new() -> Self {
         Self {
             start_time: std::time::Instant::now(),
+            last_frame_time: std::time::Instant::now(),
+            frame_count: 0,
+            cursor_position: Float2 { x: 0.0, y: 0.0 },
+            is_cursor_inside_window: false,
+            pointer_device_state: Float2 { x: 0.0, y: 0.0 },
+            date: {
+                let today = chrono::prelude::Local::now();
+                use chrono::Datelike;
+                Float4 {
+                    x: today.year() as f32,
+                    y: today.month() as f32,
+                    z: today.day() as f32,
+                    w: today.offset().local_minus_utc() as f32,
+                }
+            },
         }
     }
 
-    fn get_input(&self, window: &winit::window::Window) -> Input {
+    fn set_cursor_presence(&mut self, is_present: bool) {
+        self.is_cursor_inside_window = is_present;
+    }
+
+    fn set_cursor_position(&mut self, position: winit::dpi::PhysicalPosition<f64>) {
+        self.is_cursor_inside_window = true;
+        self.cursor_position = Float2 {
+            x: position.x as f32,
+            y: position.y as f32,
+        };
+    }
+
+    fn set_cursor_click_state(
+        &mut self,
+        button: winit::event::MouseButton,
+        state: winit::event::ElementState,
+    ) {
+        let state_value = match state {
+            winit::event::ElementState::Pressed => 1.0,
+            winit::event::ElementState::Released => 0.0,
+        };
+        match button {
+            winit::event::MouseButton::Left => {
+                self.pointer_device_state.x = state_value;
+            }
+            winit::event::MouseButton::Right => {
+                self.pointer_device_state.y = state_value;
+            }
+            _ => {}
+        }
+    }
+
+    fn current_input(&mut self, window: &winit::window::Window) -> Input {
         let physical_size = window.inner_size();
-        Input {
+        let physical_position = window.inner_position().unwrap();
+        self.frame_count += 1;
+        let result = Input {
             window_size: Float2 {
                 x: physical_size.width as f32,
                 y: physical_size.height as f32,
             },
+            window_position: Float2 {
+                x: physical_position.x as f32,
+                y: physical_position.y as f32,
+            },
+            cursor_position: self.cursor_position,
+            is_cursor_inside_window: if self.is_cursor_inside_window {
+                1.0
+            } else {
+                0.0
+            },
+            elapsed_time_since_last_frame_secs: self.last_frame_time.elapsed().as_secs_f32(),
             elapsed_time_secs: self.start_time.elapsed().as_secs_f32(),
-        }
+            frame_count: self.frame_count as f32,
+            year_month_day_tz: self.date,
+        };
+        self.last_frame_time = std::time::Instant::now();
+        result
     }
 }
 
@@ -258,7 +347,10 @@ fn window_sizing(
 fn watch_shader_sources(
     delay: std::time::Duration,
     source_file_paths: Vec<&std::path::PathBuf>,
-) -> std::sync::mpsc::Receiver<notify::DebouncedEvent> {
+) -> (
+    notify::FsEventWatcher,
+    std::sync::mpsc::Receiver<notify::DebouncedEvent>,
+) {
     let (tx, rx) = std::sync::mpsc::channel();
     let mut watcher = notify::watcher(tx, delay).unwrap();
     use notify::Watcher;
@@ -267,7 +359,7 @@ fn watch_shader_sources(
             .watch(path, notify::RecursiveMode::NonRecursive)
             .unwrap();
     }
-    rx
+    (watcher, rx)
 }
 
 struct FrameRateReporter {

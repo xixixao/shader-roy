@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![allow(clippy::float_cmp)]
 use shader_roy_metal_sl_interface::*;
 
@@ -19,10 +20,10 @@ pub fn sample_color(coordinates: Float2) -> Float4 {
   let cam_pos = float3(0.0, 0.0, -1.0);
   let cam_target = float3(0.0, 0.0, 0.0);
 
-  let uv = screen_to_world(coordinates, INPUT.window_size);
+  let uv = screen_to_world(coordinates);
   let ray_dir = get_camera_ray_dir(uv, cam_pos, cam_target);
 
-  let col = render(cam_pos, ray_dir, INPUT.elapsed_time_secs);
+  let col = render(cam_pos, ray_dir, uv);
   let gamma_corrected = col.pow(0.4545);
   (gamma_corrected, 1.0).float4()
 }
@@ -50,7 +51,7 @@ fn sdf(pos: Float3) -> Float {
   scene(pos).x
 }
 
-fn render(ray_origin: Float3, ray_dir: Float3, elapsed_time_secs: Float) -> Float3 {
+fn render(ray_origin: Float3, ray_dir: Float3, uv: Float2) -> Float3 {
   let Float2 { x: d, y: material } = cast_ray(ray_origin, ray_dir);
   if material <= 0.0 {
     // Skybox colour
@@ -58,8 +59,20 @@ fn render(ray_origin: Float3, ray_dir: Float3, elapsed_time_secs: Float) -> Floa
   } else {
     let pos = ray_origin + ray_dir * d;
     let normal = calc_normal(pos);
-    let light_dir =
-      float3(elapsed_time_secs.sin(), elapsed_time_secs.cos() + 0.5, -0.5).normalized();
+    let light_dir: Float3;
+    if INPUT.is_cursor_inside_window == 1.0 {
+      light_dir = (screen_to_world(INPUT.cursor_position) - uv, -0.5)
+        .float3()
+        .normalized();
+    } else {
+      light_dir = (
+        INPUT.elapsed_time_secs.sin(),
+        INPUT.elapsed_time_secs.cos() + 0.5,
+        -0.5,
+      )
+        .float3()
+        .normalized();
+    }
     let surface_color = float3(0.4, 0.8, 0.1);
     // L is vector from surface point to light, N is surface normal. N and L must be normalized!
     let brightness = normal.dot(light_dir).max(0.0);
@@ -165,7 +178,8 @@ fn palette(mut t: Float, a: Float3, b: Float3, c: Float3, d: Float3) -> Float3 {
   a + b * (6.28318 * (c * t + d)).cos()
 }
 
-fn screen_to_world(screen: Float2, size: Float2) -> Float2 {
+fn screen_to_world(screen: Float2) -> Float2 {
+  let size = INPUT.window_size;
   let mut result = 2.0 * (screen / size - 0.5);
   result.x *= size.x / size.y;
   result.y *= -1.0;
