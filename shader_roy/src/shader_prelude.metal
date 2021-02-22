@@ -2,15 +2,7 @@
 
 using namespace metal;
 
-// Input passed from CPU to GPU on each frame, defined for Rust
-// version of the shader code in shader_roy_metal_sl_interface.
-typedef struct {
-    float2 window_size;
-    float elapsed_time_secs;
-} Input;
-
-// The function that has to be implemented by each ShaderRoy shader.
-float4 pixel_color(float2 coordinates, constant Input& input);
+/// SHADER_RS
 
 // The vertex shader
 float2 rect_vert(float4 rect, uint vid);
@@ -26,7 +18,7 @@ fragment float4 fragment_shader(
     float4 in [[position]],
     constant Input& input [[ buffer(0) ]]
 ) {
-    return pixel_color(float2(in.x, in.y), input);
+    return SHADER_RS_ENTRYPOINT(float2(in.x, in.y), input);
 }
 
 // Helper for computing pixel position in vertext shader

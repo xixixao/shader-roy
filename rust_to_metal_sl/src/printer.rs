@@ -72,12 +72,27 @@ impl AstPrinter {
     self.context = outer_context;
   }
 
+  fn append<S>(&mut self, string: S)
+  where
+    S: AsRef<str>,
+  {
+    self.output.push_str(string.as_ref());
+  }
+
+  fn appendln<S>(&mut self, string: S)
+  where
+    S: AsRef<str>,
+  {
+    self.append(string);
+    self.output.push('\n');
+  }
+
   fn add<S>(&mut self, string: S)
   where
     S: AsRef<str>,
   {
     self.output.push_str(&self.indent);
-    self.output.push_str(string.as_ref());
+    self.append(string.as_ref());
   }
 
   fn addln<S>(&mut self, string: S)
@@ -116,6 +131,25 @@ enum Context {
 }
 
 impl syn::visit::Visit<'_> for AstPrinter {
+  fn visit_item_struct(&mut self, strct: &syn::ItemStruct) {
+    if !matches!(self.mode, PrinterMode::Declarations) {
+      return;
+    }
+    self.addln(format!("struct {} {{", strct.ident.to_string()));
+    self.indent(|_self| {
+      if let syn::Fields::Named(syn::FieldsNamed { named, .. }) = &strct.fields {
+        for field in named.iter() {
+          _self.visit_type(&field.ty);
+          _self.append(format!(" {}", field.ident.as_ref().unwrap().to_string()));
+          _self.appendln(";");
+        }
+      }
+    });
+    self.addln("};\n");
+  }
+
+  fn visit_item_const(&mut self, _: &syn::ItemConst) {}
+
   fn visit_item_fn(&mut self, fun: &syn::ItemFn) {
     self.process_with_context(Context::ItemFn, |_self| {
       let ret_type = match &fun.sig.output {
@@ -155,7 +189,7 @@ impl syn::visit::Visit<'_> for AstPrinter {
       _self.add(")");
       match _self.mode {
         PrinterMode::Declarations => {
-          _self.output.push_str(";\n");
+          _self.append(";\n");
         }
         PrinterMode::Definitions => _self.visit_block(&*fun.block),
       }
@@ -200,7 +234,7 @@ impl syn::visit::Visit<'_> for AstPrinter {
   fn visit_stmt(&mut self, statement: &syn::Stmt) {
     syn::visit::visit_stmt(self, statement);
     if !matches!(statement, syn::Stmt::Expr(_)) {
-      self.output.push_str(";\n");
+      self.append(";\n");
     }
   }
 

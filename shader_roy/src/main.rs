@@ -92,7 +92,11 @@ fn main() -> Result<()> {
 
     let file_events_receiver = watch_shader_sources(
         std::time::Duration::from_secs(1),
-        vec![&shader_file_path, &*shader_compiler::SHADER_PRELUDE_PATH],
+        vec![
+            &shader_file_path,
+            &*shader_compiler::SHADER_PRELUDE_PATH,
+            &*shader_compiler::SHADER_INTERFACE_PATH,
+        ],
     );
     let mut pipeline_state: Option<RenderPipelineState> = None;
     let mut frame_rate_reporter = FrameRateReporter::new();

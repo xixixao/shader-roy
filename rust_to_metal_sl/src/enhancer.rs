@@ -21,7 +21,7 @@ pub struct EnhanceConfig {
   pub param_type: String,
 }
 
-pub fn convert_constant_to_param(rust_ast: syn::File, properties: EnhanceConfig) -> syn::File {
+pub fn convert_constant_to_param(rust_ast: syn::File, properties: &EnhanceConfig) -> syn::File {
   let fn_items = FnItemsCollector::name_to_fn_items(&rust_ast);
   let is_using = {
     let mut is_using = HashMap::<String, bool>::new();
@@ -147,16 +147,16 @@ impl syn::visit::Visit<'_> for CalledFnsCollector {
   }
 }
 
-struct FnItemsEnhancer {
+struct FnItemsEnhancer<'a> {
   is_using: HashMap<String, bool>,
-  properties: EnhanceConfig,
+  properties: &'a EnhanceConfig,
 }
 
-impl FnItemsEnhancer {
+impl<'a> FnItemsEnhancer<'a> {
   fn add_params(
     mut rust_ast: syn::File,
     is_using: HashMap<String, bool>,
-    properties: EnhanceConfig,
+    properties: &'a EnhanceConfig,
   ) -> syn::File {
     use syn::visit_mut::VisitMut;
     let mut enhancer = Self {
@@ -172,7 +172,7 @@ impl FnItemsEnhancer {
   }
 }
 
-impl syn::visit_mut::VisitMut for FnItemsEnhancer {
+impl syn::visit_mut::VisitMut for FnItemsEnhancer<'_> {
   fn visit_item_fn_mut(&mut self, item_fn: &mut syn::ItemFn) {
     let fn_name = item_fn.sig.ident.to_string();
     if self.is_using(&fn_name) {
