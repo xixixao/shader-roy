@@ -9,8 +9,11 @@ pub struct Input {
   pub window_position: Float2,
   /// The cursor left (x) and top (y) position in physical units.
   pub cursor_position: Float2,
-  /// Whether the cursor is inside the window, 1.0 for true, 0.0 for false,
-  /// defaults to false until the cursor moves inside or enters the window.
+  /// Whether the cursor is inside the window and the window is focused.
+  ///
+  /// 1.0 for true, 0.0 for false.
+  ///
+  /// Defaults to false until the cursor moves inside or enters the window.
   pub is_cursor_inside_window: Float,
   /// Time since starting the program, in fractions of seconds.
   pub elapsed_time_secs: Float,

@@ -112,7 +112,9 @@ fn main() -> Result<()> {
     events_loop.run(move |event, _, control_flow| {
         autoreleasepool(|| {
             let res = (|| -> Result<(), Box<dyn std::error::Error>> {
-                *control_flow = ControlFlow::Poll;
+                *control_flow = ControlFlow::WaitUntil(
+                    std::time::Instant::now() + std::time::Duration::from_secs_f64(1.0 / 60.0),
+                );
 
                 match event {
                     Event::WindowEvent { event, .. } => match event {
@@ -122,6 +124,9 @@ fn main() -> Result<()> {
                                 size.width as f64,
                                 size.height as f64,
                             ));
+                        }
+                        WindowEvent::Focused(is_focused) => {
+                            input_computer.set_is_focused(is_focused);
                         }
                         WindowEvent::CursorEntered { .. } => {
                             input_computer.set_cursor_presence(true);
@@ -206,8 +211,9 @@ struct InputComputer {
     start_time: std::time::Instant,
     last_frame_time: std::time::Instant,
     frame_count: u64,
-    cursor_position: Float2,
+    is_window_focused: bool,
     is_cursor_inside_window: bool,
+    cursor_position: Float2,
     pointer_device_state: Float2,
     date: Float4,
 }
@@ -218,8 +224,9 @@ impl InputComputer {
             start_time: std::time::Instant::now(),
             last_frame_time: std::time::Instant::now(),
             frame_count: 0,
-            cursor_position: Float2 { x: 0.0, y: 0.0 },
+            is_window_focused: true,
             is_cursor_inside_window: false,
+            cursor_position: Float2 { x: 0.0, y: 0.0 },
             pointer_device_state: Float2 { x: 0.0, y: 0.0 },
             date: {
                 let today = chrono::prelude::Local::now();
@@ -234,8 +241,12 @@ impl InputComputer {
         }
     }
 
+    fn set_is_focused(&mut self, is_focused: bool) {
+        self.is_window_focused = is_focused;
+    }
+
     fn set_cursor_presence(&mut self, is_present: bool) {
-        self.is_cursor_inside_window = is_present;
+        self.is_cursor_inside_window = self.is_window_focused && is_present;
     }
 
     fn set_cursor_position(&mut self, position: winit::dpi::PhysicalPosition<f64>) {
@@ -251,6 +262,9 @@ impl InputComputer {
         button: winit::event::MouseButton,
         state: winit::event::ElementState,
     ) {
+        if !self.is_cursor_inside_window {
+            return;
+        }
         let state_value = match state {
             winit::event::ElementState::Pressed => 1.0,
             winit::event::ElementState::Released => 0.0,
