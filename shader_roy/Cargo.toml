@@ -4,15 +4,8 @@ version = "0.1.0"
 authors = ["Michal Srb <xixixao@seznam.cz>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[[example]]
-name = "two2dsdf"
-crate-type = ["staticlib"]
-
 [dependencies]
 rust_to_metal_sl = { path="../rust_to_metal_sl" }
-metal_sl_prelude = { path="../metal_sl_prelude" }
 metal = { git = "https://github.com/xixixao/metal-rs", branch = "fix-errors-new-library" }
 objc = { version = "0.2.4", features = ["objc_exception"] }
 winit = "0.24.0"

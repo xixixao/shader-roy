@@ -1,0 +1,12 @@
+[package]
+name = "raymarching_eyes"
+version = "0.1.0"
+authors = ["Michal Srb <xixixao@seznam.cz>"]
+edition = "2018"
+
+[lib]
+path = "raymarching_eyes.rs"
+
+[dependencies]
+shader_roy_metal_sl_interface = { path="../../shader_roy_metal_sl_interface" }
+

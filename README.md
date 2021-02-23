@@ -4,16 +4,16 @@ ShaderToy clone in Rust, currently supporting MacOS.
 
 ## Features
 
-1. `cargo run example_raymarching` displays a single macOS window filled with a [Metal](https://developer.apple.com/metal/) framework [fragment shader](https://developer.apple.com/documentation/metal/using_a_render_pipeline_to_render_primitives#3682806).
-2. You can edit and save `example_raymarching.rs` (in VS code or any other editor) to change the fragment shader output and the window will update in real time.
-3. `shader.rs` is written in Rust but complies to [Metal Shading Language](https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf) (a variation of C++)
-4. In `example_raymarching.rs` you can reference the constant `INPUT` struct which provides inputs for each frame, similarly to Input Uniforms in ShaderToy. You don't need to thread these values through your functions (Metal has no concept of global uniforms like WebGL does).
+1. `cargo run <rust project dir>` displays a single macOS window filled with a [Metal](https://developer.apple.com/metal/) framework [fragment shader](https://developer.apple.com/documentation/metal/using_a_render_pipeline_to_render_primitives#3682806).
+2. You can edit and save the Rust project source code (in VS code or any other editor) to change the fragment shader output and the window will update in real time.
+3. You write the shader in Rust but it is compiled to [Metal Shading Language](https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf) (a variation of C++)
+4. In the shader source you can reference the `const` `INPUT` struct which provides inputs for each frame, similarly to _Input Uniforms_ in ShaderToy. You don't need to thread these values through your functions as arguments, despite Metal having no concept of global uniforms like WebGL does.
 
 ## Instructions
 
 1. clone this repo
-2. run `cargo run example_raymarching`
-3. edit `example_raymarching/src/example_raymarching.rs`
+2. run `cargo run examples/raymarching_eyes`
+3. edit `example_raymarching/raymarching_eyes.rs`
 
 Why Rust for the shader source? Better syntax, better editor integration and because it's a fun hack. It should feel exactly like writing Rust (which feels awesome!). Unlike in ShaderToy the Rust typechecker warns immediately about most errors one might make.
 

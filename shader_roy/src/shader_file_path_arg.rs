@@ -32,7 +32,16 @@ fn path_or_lib_src(arg_path: &std::path::PathBuf) -> Result<std::path::PathBuf> 
       )
     })?;
     if let Some(path) = parsed_cargo_manifest["lib"]["path"].as_str() {
-      arg_path.join(path)
+      let source_path = arg_path.join(path);
+      std::fs::metadata(&source_path).with_context(|| {
+        format!(
+          "Could not find the source file at {:?} based on [lib][path] {} specified in Cargo.toml file at {:?}",
+          source_path,
+          path,
+          cargo_manifest_path
+        )
+      })?;
+      source_path
     } else {
       arg_path.join("src/lib.rs")
     }

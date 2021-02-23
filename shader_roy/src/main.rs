@@ -10,7 +10,7 @@ extern crate objc;
 mod shader_compiler;
 mod shader_file_path_arg;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use cocoa::{appkit::NSView, base::id as cocoa_id};
 
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
             &*shader_compiler::SHADER_PRELUDE_PATH,
             &*shader_compiler::SHADER_INTERFACE_PATH,
         ],
-    );
+    )?;
     let mut pipeline_state: Option<RenderPipelineState> = None;
     let mut frame_rate_reporter = FrameRateReporter::new();
     let mut input_computer = InputComputer::new();
@@ -347,19 +347,19 @@ fn window_sizing(
 fn watch_shader_sources(
     delay: std::time::Duration,
     source_file_paths: Vec<&std::path::PathBuf>,
-) -> (
+) -> Result<(
     notify::FsEventWatcher,
     std::sync::mpsc::Receiver<notify::DebouncedEvent>,
-) {
+)> {
     let (tx, rx) = std::sync::mpsc::channel();
-    let mut watcher = notify::watcher(tx, delay).unwrap();
+    let mut watcher = notify::watcher(tx, delay)?;
     use notify::Watcher;
     for path in source_file_paths.iter() {
         watcher
             .watch(path, notify::RecursiveMode::NonRecursive)
-            .unwrap();
+            .with_context(|| format!("Failed to watch path {:?}", path))?;
     }
-    (watcher, rx)
+    Ok((watcher, rx))
 }
 
 struct FrameRateReporter {

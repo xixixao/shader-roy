@@ -1,11 +1,11 @@
 // Ported from
 // https://github.com/electricsquare/raymarching-workshop#2d-sdf-demo
 
-use metal_sl_prelude::*;
+use shader_roy_metal_sl_interface::*;
 
-pub fn pixel_color(coordinates: Float2, input: Input) -> Float4 {
+pub fn pixel_color(coordinates: Float2) -> Float4 {
   // project screen coordinate into world
-  let p: Float2 = screen_to_world(coordinates, input.window_size);
+  let p: Float2 = screen_to_world(coordinates, INPUT.window_size);
   // signed distance for scene
   let sd: Float = sdf(p);
   // compute signed distance to a colour

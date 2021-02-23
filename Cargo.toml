@@ -2,7 +2,6 @@
 default-members=["shader_roy"]
 members = [
     "shader_roy",
-    "rust_to_metal_sl",
-    "metal_sl_prelude",
-    "example_raymarching",
+    "examples/raymarching_eyes",
+    "examples/two_dimensional_sdf",
 ]

@@ -283,13 +283,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
-name = "example_raymarching"
-version = "0.1.0"
-dependencies = [
- "shader_roy_metal_sl_interface",
-]
-
-[[package]]
 name = "filetime"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -895,6 +888,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "raymarching_eyes"
+version = "0.1.0"
+dependencies = [
+ "shader_roy_metal_sl_interface",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.1.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1024,7 +1024,6 @@ dependencies = [
  "cocoa",
  "lazy_static",
  "metal",
- "metal_sl_prelude",
  "notify",
  "objc",
  "path-absolutize",
@@ -1159,6 +1158,13 @@ name = "ttf-parser"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e5d7cd7ab3e47dda6e56542f4bbf3824c15234958c6e1bd6aaa347e93499fdc"
+
+[[package]]
+name = "two_dimensional_sdf"
+version = "0.1.0"
+dependencies = [
+ "shader_roy_metal_sl_interface",
+]
 
 [[package]]
 name = "unicode-segmentation"
