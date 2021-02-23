@@ -58,11 +58,11 @@ fn main() -> Result<()> {
     let (window_size, window_position) = window_sizing((0.4, 0.4), &events_loop);
     let window = winit::window::WindowBuilder::new()
         .with_inner_size(window_size)
+        .with_outer_position(window_position)
         .with_title("ShaderRoy")
         .with_always_on_top(true)
         .build(&events_loop)
         .unwrap();
-    window.set_outer_position(window_position);
 
     let device = Device::system_default().expect("no device found");
 

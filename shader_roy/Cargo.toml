@@ -8,7 +8,7 @@ edition = "2018"
 rust_to_metal_sl = { path="../rust_to_metal_sl" }
 metal = { git = "https://github.com/xixixao/metal-rs", branch = "fix-errors-new-library" }
 objc = { version = "0.2.4", features = ["objc_exception"] }
-winit = "0.24.0"
+winit = { git = "https://github.com/xixixao/winit", branch = "with_outer_position" }
 cocoa = "0.24.0"
 anyhow = "1.0.38"
 vek = "0.13.0"
