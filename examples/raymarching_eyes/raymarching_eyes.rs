@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 #![allow(clippy::float_cmp)]
+
+use sdf_utils::*;
 use shader_roy_metal_sl_interface::*;
+
+mod sdf_utils;
 
 pub fn pixel_color(coordinates: Float2) -> Float4 {
   let num_samples_per_axis = 3;
@@ -137,36 +141,6 @@ fn sky() -> Float2 {
 
 fn red_plush(d: Float) -> Float2 {
   float2(d, 1.0)
-}
-
-// --- SDF utility library
-
-fn subtract(d1: Float, d2: Float) -> Float {
-  -d1.max(d2)
-}
-
-fn sd_sphere(p: Float3, pos: Float3, radius: Float) -> Float {
-  p.distance(pos) - radius
-}
-
-fn sd_box(p: Float2, pos: Float2, size: Float2) -> Float {
-  let d: Float2 = (p - pos).abs() - size;
-  d.x.clamped(d.y, 0.0) + d.max(0.0).magnitude()
-}
-
-// polynomial smooth min (k = 0.1);
-fn smin_cubic(a: Float, b: Float, k: Float) -> Float {
-  let h: Float = k - (a - b).abs().max(0.0);
-  a.min(b) - h * h * h / (6.0 * k * k)
-}
-
-fn op_u(d1: Float, d2: Float) -> Float {
-  d1.min(d2)
-}
-
-fn op_blend(d1: Float, d2: Float) -> Float {
-  let k: Float = 0.2;
-  smin_cubic(d1, d2, k)
 }
 
 // // --- Misc functions

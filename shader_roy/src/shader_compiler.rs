@@ -21,8 +21,7 @@ where
   let shader_prelude = std::fs::read_to_string(&*SHADER_PRELUDE_PATH)?;
   let shader_interface = std::fs::read_to_string(&*SHADER_INTERFACE_PATH)?;
   let combined_shader = {
-    let fragment_shader_in_rust = std::fs::read_to_string(shader_file_path)
-      .with_context(|| format!("Failed to read shader from `{:?}`", shader_file_path))?;
+    let fragment_shader_in_rust = read_shader_sources(shader_file_path)?;
     let config = rust_to_metal_sl::EnhanceConfig {
       entry_point_fn_name: ENTRY_POINT_FN_NAME.to_owned(),
       constant_name: "INPUT".to_owned(),
@@ -46,6 +45,27 @@ where
     .new_library_with_source(&combined_shader, &metal::CompileOptions::new())
     .map_err(anyhow::Error::msg)?;
   Ok(library)
+}
+
+fn read_shader_sources(shader_file_path: &std::path::Path) -> Result<String> {
+  let fragment_shader_in_rust = std::fs::read_to_string(shader_file_path)
+    .with_context(|| format!("Failed to read shader from `{:?}`", shader_file_path))?;
+  lazy_static::lazy_static! {
+      static ref MODULE_DECLARATION: regex::Regex =
+        regex::Regex::new(r"mod\s+(?P<module_name>\w+)\s*;").unwrap();
+  }
+  let shader_directory = shader_file_path.parent().unwrap().to_owned();
+
+  use regex_try::RegexTry;
+  MODULE_DECLARATION
+    .try_replace_all(&fragment_shader_in_rust, |captured: &regex::Captures| {
+      read_shader_sources(
+        &shader_directory
+          .join(&captured["module_name"])
+          .with_extension("rs"),
+      )
+    })
+    .map(|result| result.into_owned())
 }
 
 #[test]

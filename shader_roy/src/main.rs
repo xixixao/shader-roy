@@ -100,7 +100,7 @@ fn main() -> Result<()> {
     let (_watcher, file_events_receiver) = watch_shader_sources(
         std::time::Duration::from_secs(1),
         vec![
-            &shader_file_path,
+            shader_file_path.parent().unwrap(),
             &*shader_compiler::SHADER_PRELUDE_PATH,
             &*shader_compiler::SHADER_INTERFACE_PATH,
         ],
@@ -360,7 +360,7 @@ fn window_sizing(
 
 fn watch_shader_sources(
     delay: std::time::Duration,
-    source_file_paths: Vec<&std::path::PathBuf>,
+    source_file_paths: Vec<&std::path::Path>,
 ) -> Result<(
     notify::FsEventWatcher,
     std::sync::mpsc::Receiver<notify::DebouncedEvent>,
@@ -370,7 +370,7 @@ fn watch_shader_sources(
     use notify::Watcher;
     for path in source_file_paths.iter() {
         watcher
-            .watch(path, notify::RecursiveMode::NonRecursive)
+            .watch(path, notify::RecursiveMode::Recursive)
             .with_context(|| format!("Failed to watch path {:?}", path))?;
     }
     Ok((watcher, rx))

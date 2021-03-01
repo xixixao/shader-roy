@@ -1,0 +1,15 @@
+[package]
+name = "regex_try"
+version = "0.1.0"
+authors = ["Michal Srb <xixixao@seznam.cz>"]
+license = "MIT OR Apache-2.0"
+description = """
+Replace methods for Regex propogating errors via Result.
+"""
+documentation = "https://docs.rs/regex_try"
+keywords=["regex", "regular-expressions", "result"]
+edition = "2018"
+
+
+[dependencies]
+regex = "1.4.3"

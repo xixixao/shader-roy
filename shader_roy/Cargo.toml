@@ -9,6 +9,7 @@ rust_to_metal_sl = { path="../rust_to_metal_sl" }
 metal = { git = "https://github.com/xixixao/metal-rs", branch = "fix-errors-new-library" }
 objc = { version = "0.2.4", features = ["objc_exception"] }
 winit = { git = "https://github.com/xixixao/winit", branch = "with_outer_position" }
+regex_try = { path="../regex_try" }
 cocoa = "0.24.0"
 anyhow = "1.0.38"
 vek = "0.13.0"
@@ -16,4 +17,5 @@ lazy_static = "1.4.0"
 notify = "4.0.15"
 toml = "0.5.8"
 path-absolutize = "3.0.6"
+regex = "1.4.3"
 chrono = "0.4.19"
