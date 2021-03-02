@@ -310,6 +310,10 @@ impl syn::visit::Visit<'_> for AstPrinter {
           }
           _ => anyhow::bail!("Unsupported for loop expression"),
         },
+        syn::Expr::While(syn::ExprWhile { cond, body, .. }) => {
+          _self.addln(format!("while ({})", cp(cond)));
+          _self.visit_block(body);
+        }
         syn::Expr::If(syn::ExprIf {
           cond,
           then_branch,

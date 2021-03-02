@@ -1,7 +1,6 @@
 [package]
 name = "two_dimensional_sdf"
 version = "0.1.0"
-authors = ["Michal Srb <xixixao@seznam.cz>"]
 edition = "2018"
 
 [lib]

@@ -2,6 +2,7 @@
 default-members=["shader_roy"]
 members = [
     "shader_roy",
+    "examples/mandelbrot",
     "examples/raymarching_eyes",
     "examples/two_dimensional_sdf",
 ]
