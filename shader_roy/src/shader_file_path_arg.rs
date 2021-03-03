@@ -3,9 +3,13 @@ use path_absolutize::Absolutize;
 
 pub fn get_path() -> Result<std::path::PathBuf> {
   let args: Vec<String> = std::env::args().collect();
-  let arg_path = &std::path::PathBuf::from(args.get(1).ok_or_else(|| {
+  get_path_for_argument(args.get(1).ok_or_else(|| {
     anyhow!("Cannot start ShaderRoy: Missing shader entry point file path argument")
-  })?);
+  })?)
+}
+
+pub fn get_path_for_argument(argument: &str) -> Result<std::path::PathBuf> {
+  let arg_path = &std::path::PathBuf::from(argument);
   path_or_lib_src(arg_path).map_err(|error| {
     anyhow!(
       "Cannot start ShaderRoy: {:?}\

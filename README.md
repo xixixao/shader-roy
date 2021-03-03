@@ -9,6 +9,7 @@ ShaderToy clone in Rust, currently supporting MacOS.
 3. You write the shader in Rust but it is compiled to [Metal Shading Language](https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf) (a variation of C++)
 4. In the shader source you can reference the `const` `INPUT` struct which provides inputs for each frame, similarly to _Input Uniforms_ in ShaderToy. You don't need to thread these values through your functions as arguments, despite Metal having no concept of global uniforms like WebGL does.
 5. You can split the shader across multiple files using `mod <name>` and `use <name>::*`.
+6. You can pause, restart and even run another shader file from the command line while the window is open.
 
 ## Instructions
 
@@ -182,6 +183,14 @@ x.step(0.3);
 </tr>
 
 </table>
+
+## Limitations
+
+### Modules
+
+Right now only modules in the same directory as the main file will be watched.
+Only files in the same directory are supported for `mod <name>`s, not `<name>/mod.rs`
+There is no support for `path` attribute on `mod`s.
 
 ## Development
 

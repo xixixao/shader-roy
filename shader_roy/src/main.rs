@@ -51,9 +51,13 @@ struct Input {
     year_month_day_tz: Float4,
 }
 
-fn main() -> Result<()> {
-    let shader_file_path = shader_file_path_arg::get_path()?;
+enum CLICommand {
+    Pause,
+    Restart,
+    Run(String),
+}
 
+fn main() -> Result<()> {
     let events_loop = winit::event_loop::EventLoop::new();
     let (window_size, window_position) = window_sizing((0.4, 0.4), &events_loop);
     let window = winit::window::WindowBuilder::new()
@@ -96,15 +100,10 @@ fn main() -> Result<()> {
     let command_queue = device.new_command_queue();
     let mut run_error: Option<()> = None;
 
-    // Watcher needed otherwise it gets dropped too early
-    let (_watcher, file_events_receiver) = watch_shader_sources(
-        std::time::Duration::from_secs(1),
-        vec![
-            shader_file_path.parent().unwrap(),
-            &*shader_compiler::SHADER_PRELUDE_PATH,
-            &*shader_compiler::SHADER_INTERFACE_PATH,
-        ],
-    )?;
+    let mut shader_file_path = shader_file_path_arg::get_path()?;
+    let mut shader_files_watcher = ShaderFilesWatcher::new(std::time::Duration::from_secs(1))?;
+    shader_files_watcher.watch(&shader_file_path)?;
+    let cli_commands_watcher = CLICommandsWatcher::new();
     let mut pipeline_state: Option<RenderPipelineState> = None;
     let mut frame_rate_reporter = FrameRateReporter::new();
     let mut input_computer = InputComputer::new();
@@ -146,13 +145,35 @@ fn main() -> Result<()> {
                         window.request_redraw();
                     }
                     Event::RedrawRequested(_) => {
-                        let file_event = file_events_receiver.try_recv();
-                        if pipeline_state.is_none() && run_error.is_none() || file_event.is_ok() {
+                        match cli_commands_watcher.try_recv() {
+                            Some(CLICommand::Pause) => {
+                                input_computer.toggle_paused();
+                            }
+                            Some(CLICommand::Restart) => {
+                                input_computer.reset();
+                            }
+                            Some(CLICommand::Run(new_path)) => {
+                                shader_file_path =
+                                    shader_file_path_arg::get_path_for_argument(&new_path)?;
+                                shader_files_watcher.watch(&shader_file_path)?;
+                                pipeline_state = None;
+                                input_computer.reset();
+                            }
+                            None => {}
+                        }
+                        if input_computer.is_paused() {
+                            return Ok(());
+                        }
+
+                        if pipeline_state.is_none() && run_error.is_none()
+                            || shader_files_watcher.has_changes()
+                        {
                             let library = shader_compiler::compile_shader(
                                 &shader_file_path,
                                 &device,
                                 |fragment_shader_in_msl| {
                                     println!("{}", fragment_shader_in_msl);
+                                    CLICommandsWatcher::print_instructions();
                                 },
                             )?;
                             pipeline_state = Some(prepare_pipeline_state(
@@ -193,7 +214,7 @@ fn main() -> Result<()> {
                         command_buffer.present_drawable(&drawable);
                         command_buffer.commit();
 
-                        frame_rate_reporter.calculate_frame_rate_and_maybe_report();
+                        frame_rate_reporter.calculate_frame_rate_and_maybe_report(&window);
                     }
                     _ => {}
                 };
@@ -207,6 +228,54 @@ fn main() -> Result<()> {
     });
 }
 
+struct CLICommandsWatcher {
+    #[allow(dead_code)] // Required to avoid dropping child
+    watcher_thread: std::thread::JoinHandle<()>,
+    receiver: std::sync::mpsc::Receiver<CLICommand>,
+}
+
+impl CLICommandsWatcher {
+    fn new() -> Self {
+        let (tx, receiver) = std::sync::mpsc::channel();
+        let watcher_thread = std::thread::spawn(move || loop {
+            let mut cli_input = String::new();
+            let _ = std::io::stdin().read_line(&mut cli_input);
+            let event = match &cli_input[0..1] {
+                "p" => CLICommand::Pause,
+                "r" => match &cli_input[1..2] {
+                    " " => CLICommand::Run(cli_input[2..cli_input.len() - 1].to_owned()),
+                    _ => CLICommand::Restart,
+                },
+                _ => {
+                    continue;
+                }
+            };
+            Self::print_prompt();
+            tx.send(event).unwrap();
+        });
+
+        CLICommandsWatcher {
+            watcher_thread,
+            receiver,
+        }
+    }
+
+    fn try_recv(&self) -> Option<CLICommand> {
+        self.receiver.try_recv().ok()
+    }
+
+    fn print_instructions() {
+        println!("[p] to pause, [r] to restart, [r <path>] to run another shader ");
+        Self::print_prompt();
+    }
+
+    fn print_prompt() {
+        print!("> ");
+        use std::io::Write;
+        let _ = std::io::stdout().flush();
+    }
+}
+
 struct InputComputer {
     start_time: std::time::Instant,
     last_frame_time: std::time::Instant,
@@ -216,6 +285,7 @@ struct InputComputer {
     cursor_position: Float2,
     pointer_device_state: Float2,
     date: Float4,
+    pause_time: Option<std::time::Instant>,
 }
 
 impl InputComputer {
@@ -228,17 +298,32 @@ impl InputComputer {
             is_cursor_inside_window: false,
             cursor_position: Float2 { x: 0.0, y: 0.0 },
             pointer_device_state: Float2 { x: 0.0, y: 0.0 },
-            date: {
-                let today = chrono::prelude::Local::now();
-                use chrono::Datelike;
-                Float4 {
-                    x: today.year() as f32,
-                    y: today.month() as f32,
-                    z: today.day() as f32,
-                    w: today.offset().local_minus_utc() as f32,
-                }
-            },
+            date: current_date_as_float4(),
+            pause_time: None,
         }
+    }
+
+    fn reset(&mut self) {
+        self.start_time = std::time::Instant::now();
+        self.last_frame_time = std::time::Instant::now();
+        self.frame_count = 0;
+        self.date = current_date_as_float4();
+        self.pause_time = None;
+    }
+
+    fn toggle_paused(&mut self) {
+        if let Some(pause_time) = self.pause_time {
+            let pause_duration = pause_time.elapsed();
+            self.start_time += pause_duration;
+            self.last_frame_time = std::time::Instant::now();
+            self.pause_time = None;
+        } else {
+            self.pause_time = Some(std::time::Instant::now());
+        }
+    }
+
+    fn is_paused(&self) -> bool {
+        self.pause_time.is_some()
     }
 
     fn set_is_focused(&mut self, is_focused: bool) {
@@ -309,6 +394,17 @@ impl InputComputer {
     }
 }
 
+fn current_date_as_float4() -> Float4 {
+    let today = chrono::prelude::Local::now();
+    use chrono::Datelike;
+    Float4 {
+        x: today.year() as f32,
+        y: today.month() as f32,
+        z: today.day() as f32,
+        w: today.offset().local_minus_utc() as f32,
+    }
+}
+
 fn prepare_pipeline_state(
     device: &DeviceRef,
     library: &LibraryRef,
@@ -358,22 +454,48 @@ fn window_sizing(
     (window_size, window_position)
 }
 
-fn watch_shader_sources(
-    delay: std::time::Duration,
-    source_file_paths: Vec<&std::path::Path>,
-) -> Result<(
-    notify::FsEventWatcher,
-    std::sync::mpsc::Receiver<notify::DebouncedEvent>,
-)> {
-    let (tx, rx) = std::sync::mpsc::channel();
-    let mut watcher = notify::watcher(tx, delay)?;
-    use notify::Watcher;
-    for path in source_file_paths.iter() {
-        watcher
+struct ShaderFilesWatcher {
+    watcher: notify::RecommendedWatcher,
+    receiver: std::sync::mpsc::Receiver<notify::DebouncedEvent>,
+    watched_path: Option<std::path::PathBuf>,
+}
+
+impl ShaderFilesWatcher {
+    fn new(delay: std::time::Duration) -> Result<Self> {
+        let (tx, receiver) = std::sync::mpsc::channel();
+        let watcher = notify::watcher(tx, delay)?;
+        let mut files_watcher = ShaderFilesWatcher {
+            watcher,
+            receiver,
+            watched_path: None,
+        };
+        files_watcher.start_watching(&*shader_compiler::SHADER_PRELUDE_PATH)?;
+        files_watcher.start_watching(&*shader_compiler::SHADER_INTERFACE_PATH)?;
+        Ok(files_watcher)
+    }
+
+    fn watch(&mut self, path: &std::path::Path) -> Result<()> {
+        use notify::Watcher;
+        if let Some(watched_path) = &self.watched_path {
+            let _ = self.watcher.unwatch(watched_path);
+        } else {
+            self.start_watching(path)?;
+            self.watched_path = Some(path.to_owned());
+        }
+        Ok(())
+    }
+
+    fn has_changes(&self) -> bool {
+        self.receiver.try_recv().is_ok()
+    }
+
+    fn start_watching(&mut self, path: &std::path::Path) -> Result<()> {
+        use notify::Watcher;
+        self.watcher
             .watch(path, notify::RecursiveMode::Recursive)
             .with_context(|| format!("Failed to watch path {:?}", path))?;
+        Ok(())
     }
-    Ok((watcher, rx))
 }
 
 struct FrameRateReporter {
@@ -391,14 +513,17 @@ impl FrameRateReporter {
         }
     }
 
-    fn calculate_frame_rate_and_maybe_report(&mut self) {
+    fn calculate_frame_rate_and_maybe_report(&mut self, window: &winit::window::Window) {
         let frame_duration = self.frame_start_time.elapsed().as_millis().max(1) as f64;
         let num_frames_averaged = 10.0;
         self.frame_rate_in_frames_per_sec +=
             (1000.0 / frame_duration - self.frame_rate_in_frames_per_sec) / num_frames_averaged;
         let frame_rate_in_frames_per_sec = self.frame_rate_in_frames_per_sec;
         self.rate_limiter.maybe_call(|| {
-            print!("\rFPS: {:.0}     ", frame_rate_in_frames_per_sec);
+            window.set_title(&format!(
+                "ShaderRoy [FPS: {:.0}]",
+                frame_rate_in_frames_per_sec
+            ));
             use std::io::Write;
             let _ = std::io::stdout().lock().flush();
         });
