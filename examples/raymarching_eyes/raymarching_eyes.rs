@@ -33,9 +33,37 @@ pub fn sample_color(coordinates: Float2) -> Float4 {
 }
 
 fn scene(pos: Float3) -> Float2 {
-  let grid = repeat(pos + 0.05, 0.2, float3(2.0, 2.0, 2.0));
-  red_plush(sd_sphere(grid, float3(0.0, 0.0, 0.0), 0.01))
+  let copy = repeat(pos + (0.11, 0.0, 0.0).float3(), 0.3, float3(1.0, 1.0, 0.0));
+  let grid = repeat(pos, 0.3, float3(1.0, 1.0, 0.0));
 
+  let eye_dir: Float3;
+  if INPUT.is_cursor_inside_window == 1.0 {
+    eye_dir = (
+      screen_to_world(INPUT.cursor_position) / 2.0 - pos.xy(),
+      -0.05,
+    )
+      .float3()
+      .normalized();
+  } else {
+    eye_dir = (
+      INPUT.elapsed_time_secs.sin(),
+      INPUT.elapsed_time_secs.cos() + 0.5,
+      -0.5,
+    )
+      .float3()
+      .normalized();
+  }
+
+  join(
+    white(sd_sphere(grid, float3(0.0, 0.0, 0.0), 0.05)),
+    join(
+      black(sd_sphere(grid, eye_dir / 80.0, 0.04)),
+      join(
+        white(sd_sphere(copy, float3(0.0, 0.0, 0.0), 0.05)),
+        black(sd_sphere(copy, eye_dir / 80.0, 0.04)),
+      ),
+    ),
+  )
   // red_plush(sd_sphere(q, float3(0.0, 0.0, 0.0), 0.05)).min(sd_sphere(
   //   grid,
   //   float3(0.0, 0.0, 0.0),
@@ -77,12 +105,11 @@ fn render(ray_origin: Float3, ray_dir: Float3, uv: Float2) -> Float3 {
         .float3()
         .normalized();
     }
-    let surface_color = float3(0.4, 0.8, 0.1);
     // L is vector from surface point to light, N is surface normal. N and L must be normalized!
     let brightness = normal.dot(light_dir).max(0.0);
     let light_color = float3(1.80, 1.27, 0.99) * brightness;
     let ambient = float3(0.03, 0.04, 0.1);
-    let diffuse = surface_color * (light_color + ambient);
+    let diffuse = surface_color(material) * (light_color + ambient);
     let mut shadow = 0.0;
     let shadow_ray_origin = pos + normal * 0.01;
     let shadow_t = cast_ray(shadow_ray_origin, light_dir).x;
@@ -139,8 +166,28 @@ fn sky() -> Float2 {
   float2(-1.0, 0.0)
 }
 
-fn red_plush(d: Float) -> Float2 {
+fn white(d: Float) -> Float2 {
   float2(d, 1.0)
+}
+
+fn black(d: Float) -> Float2 {
+  float2(d, 2.0)
+}
+
+fn surface_color(material: Float) -> Float3 {
+  if material <= 1.0 {
+    float3(0.9, 0.9, 0.9)
+  } else {
+    float3(0.1, 0.1, 0.1)
+  }
+}
+
+fn join(a: Float2, b: Float2) -> Float2 {
+  if a.x < b.x {
+    a
+  } else {
+    b
+  }
 }
 
 // // --- Misc functions

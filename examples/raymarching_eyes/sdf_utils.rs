@@ -6,8 +6,8 @@ pub fn subtract(d1: Float, d2: Float) -> Float {
   -d1.max(d2)
 }
 
-pub fn sd_sphere(p: Float3, pos: Float3, radius: Float) -> Float {
-  p.distance(pos) - radius
+pub fn sd_sphere(p: Float3, center: Float3, radius: Float) -> Float {
+  p.distance(center) - radius
 }
 
 pub fn sd_box(p: Float2, pos: Float2, size: Float2) -> Float {

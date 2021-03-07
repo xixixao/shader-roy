@@ -197,6 +197,7 @@ impl syn::visit_mut::VisitMut for FnItemsEnhancer<'_> {
         call.args.push(syn::parse_quote!(#constant_name));
       }
     }
+    syn::visit_mut::visit_expr_call_mut(self, call);
   }
 }
 
