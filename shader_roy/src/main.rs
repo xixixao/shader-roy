@@ -551,3 +551,20 @@ impl RateLimiter {
         }
     }
 }
+
+#[test]
+fn test() -> Result<()> {
+    let examples_dir = shader_compiler::ROOT_PATH.join("../examples");
+    for example in std::fs::read_dir(examples_dir)? {
+        let example_name = example?.file_name().into_string().unwrap();
+        // Needs leading ../ because tests run as if invoked from this package directory
+        let path =
+            shader_file_path_arg::get_path_for_argument(&format!("../examples/{}", example_name))?;
+        shader_compiler::compile_shader(
+            &path,
+            &metal::Device::system_default().unwrap(),
+            |shader_in_msl| println!("{:?}\n\n{}", &path, shader_in_msl),
+        )?;
+    }
+    Ok(())
+}

@@ -1,9 +1,11 @@
 use anyhow::{Context, Result};
+use path_absolutize::Absolutize;
 
 const ENTRY_POINT_FN_NAME: &str = "pixel_color";
 
 lazy_static::lazy_static! {
-  static ref ROOT_PATH: std::path::PathBuf = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  pub static ref ROOT_PATH: std::path::PathBuf =
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   pub static ref SHADER_PRELUDE_PATH: std::path::PathBuf =
     ROOT_PATH.join("src/shader_prelude.metal");
   pub static ref SHADER_INTERFACE_PATH: std::path::PathBuf =
@@ -48,8 +50,12 @@ where
 }
 
 fn read_shader_sources(shader_file_path: &std::path::Path) -> Result<String> {
-  let fragment_shader_in_rust = std::fs::read_to_string(shader_file_path)
-    .with_context(|| format!("Failed to read shader from `{:?}`", shader_file_path))?;
+  let fragment_shader_in_rust = std::fs::read_to_string(shader_file_path).with_context(|| {
+    format!(
+      "Failed to read shader from `{:?}`",
+      shader_file_path.absolutize().unwrap()
+    )
+  })?;
   lazy_static::lazy_static! {
       static ref MODULE_DECLARATION: regex::Regex =
         regex::Regex::new(r"mod\s+(?P<module_name>\w+)\s*;").unwrap();
@@ -66,16 +72,4 @@ fn read_shader_sources(shader_file_path: &std::path::Path) -> Result<String> {
       )
     })
     .map(|result| result.into_owned())
-}
-
-#[test]
-fn test() -> Result<()> {
-  compile_shader(
-    ROOT_PATH
-      .join("../example_raymarching/src/example_raymarching.rs")
-      .as_path(),
-    &metal::Device::system_default().unwrap(),
-    |shader_in_msl| println!("{}", shader_in_msl),
-  )?;
-  Ok(())
 }
