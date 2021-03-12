@@ -37,7 +37,7 @@ fn scene(pos: Float3) -> Float2 {
   let grid = repeat(pos, 0.3, float3(1.0, 1.0, 0.0));
 
   let eye_dir: Float3;
-  if INPUT.is_cursor_inside_window == 1.0 {
+  if INPUT.is_cursor_inside_window {
     eye_dir = (
       screen_to_world(INPUT.cursor_position) / 2.0 - pos.xy(),
       -0.05,
@@ -92,7 +92,7 @@ fn render(ray_origin: Float3, ray_dir: Float3, uv: Float2) -> Float3 {
     let pos = ray_origin + ray_dir * d;
     let normal = calc_normal(pos);
     let light_dir: Float3;
-    if INPUT.is_cursor_inside_window == 1.0 {
+    if INPUT.is_cursor_inside_window {
       light_dir = (screen_to_world(INPUT.cursor_position) - uv, -0.5)
         .float3()
         .normalized();

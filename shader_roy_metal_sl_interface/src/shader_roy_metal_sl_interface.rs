@@ -11,10 +11,8 @@ pub struct Input {
   pub cursor_position: Float2,
   /// Whether the cursor is inside the window and the window is focused.
   ///
-  /// 1.0 for true, 0.0 for false.
-  ///
   /// Defaults to false until the cursor moves inside or enters the window.
-  pub is_cursor_inside_window: Float,
+  pub is_cursor_inside_window: bool,
   /// Time since starting the program, in fractions of seconds.
   pub elapsed_time_secs: Float,
   /// Time since the rendering of the previous frame.
@@ -29,7 +27,7 @@ pub const INPUT: Input = Input {
   window_size: float2(0.0, 0.0),
   window_position: float2(0.0, 0.0),
   cursor_position: float2(0.0, 0.0),
-  is_cursor_inside_window: 0.0,
+  is_cursor_inside_window: false,
   elapsed_time_secs: 0.0,
   elapsed_time_since_last_frame_secs: 0.0,
   frame_count: 0.0,

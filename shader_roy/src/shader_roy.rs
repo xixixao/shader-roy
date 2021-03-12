@@ -44,7 +44,7 @@ struct Input {
     window_size: Float2,
     window_position: Float2,
     cursor_position: Float2,
-    is_cursor_inside_window: f32,
+    is_cursor_inside_window: bool,
     elapsed_time_secs: f32,
     elapsed_time_since_last_frame_secs: f32,
     frame_count: f32,
@@ -382,11 +382,7 @@ impl InputComputer {
                 y: physical_position.y as f32,
             },
             cursor_position: self.cursor_position,
-            is_cursor_inside_window: if self.is_cursor_inside_window {
-                1.0
-            } else {
-                0.0
-            },
+            is_cursor_inside_window: self.is_cursor_inside_window,
             elapsed_time_since_last_frame_secs: self.last_frame_time.elapsed().as_secs_f32(),
             elapsed_time_secs: self.start_time.elapsed().as_secs_f32(),
             frame_count: self.frame_count as f32,
