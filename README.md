@@ -192,6 +192,10 @@ Right now only modules in the same directory as the main file will be watched.
 Only files in the same directory are supported for `mod <name>`s, not `<name>/mod.rs`
 There is no support for `path` attribute on `mod`s.
 
+### Let bindings
+
+Variables cannot be redeclared. (_for now_)
+
 ## Development
 
 Print the compiled shader without opening the window:

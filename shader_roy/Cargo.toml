@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Michal Srb <xixixao@seznam.cz>"]
 edition = "2018"
 
+[[bin]]
+name = "shader_roy"
+path = "src/shader_roy.rs"
+
 [dependencies]
 rust_to_metal_sl = { path="../rust_to_metal_sl" }
 metal = { git = "https://github.com/xixixao/metal-rs", branch = "fix-errors-new-library" }

@@ -53,21 +53,32 @@ impl AstPrinter {
     }
   }
 
-  fn process_with_context<F>(&mut self, node: Context, processor: F)
+  fn process_with_context<F>(&mut self, context: Context, processor: F)
   where
     F: FnOnce(&mut Self) -> Result<()>,
   {
-    self.with_context(node, |_self| {
+    self.with_context(context, |_self| {
       _self.process(processor);
     });
   }
 
-  fn with_context<F>(&mut self, node: Context, processor: F)
+  fn maybe_process_with_context<F>(&mut self, maybe_context: Option<Context>, processor: F)
+  where
+    F: FnOnce(&mut Self) -> Result<()>,
+  {
+    match maybe_context {
+      Some(context) => self.with_context(context, |_self| {
+        _self.process(processor);
+      }),
+      None => self.process(processor),
+    }
+  }
+
+  fn with_context<F>(&mut self, context: Context, processor: F)
   where
     F: FnOnce(&mut Self),
   {
-    let outer_context = self.context;
-    self.context = node;
+    let outer_context = std::mem::replace(&mut self.context, context);
     processor(self);
     self.context = outer_context;
   }
@@ -122,11 +133,12 @@ impl AstPrinter {
   }
 }
 
-#[derive(Copy, Clone)]
 enum Context {
   TopLevel,
   ItemFn,
-  Stmt,
+  LetBinding(String),
+  LetBindingResult(String),
+  NormalStmt,
   ReturnStmt,
 }
 
@@ -219,7 +231,7 @@ impl syn::visit::Visit<'_> for AstPrinter {
             if is_last(i) {
               Context::ReturnStmt
             } else {
-              Context::Stmt
+              Context::NormalStmt
             },
             |_self| _self.visit_stmt(statement),
           )
@@ -233,37 +245,33 @@ impl syn::visit::Visit<'_> for AstPrinter {
 
   fn visit_stmt(&mut self, statement: &syn::Stmt) {
     syn::visit::visit_stmt(self, statement);
-    if !matches!(statement, syn::Stmt::Expr(_)) {
+    if matches!(statement, syn::Stmt::Semi(_, _)) {
       self.append(";\n");
     }
   }
 
   fn visit_local(&mut self, local: &syn::Local) {
     self.process(|_self| {
-      _self.add(format!(
-        "{} {} {}",
-        match &local.pat {
-          syn::Pat::Type(syn::PatType { ty, .. }) => {
-            cp(ty)
-          }
-          syn::Pat::Struct(syn::PatStruct { path, .. }) => {
-            cp(path)
-          }
-          _ => "auto".to_string(),
-        },
-        match match &local.pat {
-          syn::Pat::Type(syn::PatType { pat, .. }) => pat,
-          pat => pat,
-        } {
-          syn::Pat::Ident(syn::PatIdent { ident, .. }) => cp(ident),
-          syn::Pat::Struct(_) => _self.current_var(),
-          _ => anyhow::bail!("Unsupported assignment pattern"),
-        },
-        match &local.init {
-          Some((_, expression)) => format!("= {}", cp(expression)),
-          None => "".to_string(),
-        },
-      ));
+      let ty = match &local.pat {
+        syn::Pat::Type(syn::PatType { ty, .. }) => cp(ty),
+        syn::Pat::Struct(syn::PatStruct { path, .. }) => cp(path),
+        _ => "auto".to_string(),
+      };
+      let var_name = match match &local.pat {
+        syn::Pat::Type(syn::PatType { pat, .. }) => pat,
+        pat => pat,
+      } {
+        syn::Pat::Ident(syn::PatIdent { ident, .. }) => cp(ident),
+        syn::Pat::Struct(_) => _self.current_var(),
+        _ => anyhow::bail!("Unsupported assignment pattern"),
+      };
+      _self.add(format!("{} {}", ty, var_name));
+      match &local.init {
+        Some((_, expression)) => _self.with_context(Context::LetBinding(var_name), |_self| {
+          _self.visit_expr(expression);
+        }),
+        None => _self.appendln(";"),
+      }
       if let syn::Pat::Struct(syn::PatStruct { fields, .. }) = &local.pat {
         let var_name = _self.current_var();
         for field in fields {
@@ -278,6 +286,7 @@ impl syn::visit::Visit<'_> for AstPrinter {
           }
         }
         _self.done_with_var();
+        _self.appendln(";");
       }
       Ok(())
     });
@@ -314,28 +323,65 @@ impl syn::visit::Visit<'_> for AstPrinter {
           _self.addln(format!("while ({})", cp(cond)));
           _self.visit_block(body);
         }
-        syn::Expr::If(syn::ExprIf {
-          cond,
-          then_branch,
-          else_branch,
-          ..
-        }) => {
-          _self.addln(format!("if ({})", cp(cond)));
-          _self.visit_block(then_branch);
-          if let Some((_, else_branch)) = else_branch {
-            _self.addln("else");
-            _self.visit_expr(&**else_branch);
+        syn::Expr::If(if_expression) => {
+          let binding_context = if let Context::LetBinding(var_name) = &_self.context {
+            Some(Context::LetBindingResult(var_name.clone()))
+          } else {
+            None
+          };
+          let syn::ExprIf {
+            cond,
+            then_branch,
+            else_branch,
+            ..
+          } = if_expression;
+          let is_in_binding = binding_context.is_some();
+          if is_in_binding && is_if_simple_ternary(if_expression) {
+            _self.append(format!(" = ({}) ? ", cp(cond)));
+            _self.with_context(Context::NormalStmt, |_self| {
+              _self.visit_stmt(then_branch.stmts.first().unwrap());
+              _self.append(" : ");
+              let else_clause = &*else_branch.as_ref().unwrap().1;
+              match else_clause {
+                syn::Expr::If(_) => _self.visit_expr(else_clause),
+                syn::Expr::Block(syn::ExprBlock { block, .. }) => {
+                  _self.visit_stmt(block.stmts.first().unwrap())
+                }
+                // Never happens
+                _ => {}
+              }
+              _self.appendln(";");
+            })
+          } else {
+            if is_in_binding {
+              // close the variable declaration
+              _self.appendln(";");
+            }
+            _self.maybe_process_with_context(binding_context, |_self| {
+              _self.addln(format!("if ({})", cp(cond)));
+              _self.visit_block(then_branch);
+              if let Some((_, else_branch)) = else_branch {
+                _self.addln("else");
+                _self.visit_expr(&**else_branch);
+              }
+              Ok(())
+            });
           }
         }
         syn::Expr::Block(syn::ExprBlock { block, .. }) => _self.visit_block(block),
         syn::Expr::Return(_) => _self.add(cp(expression)),
-        _ => {
-          if matches!(_self.context, Context::ReturnStmt) {
-            _self.addln(format!("return {};", cp(expression)));
-          } else {
-            _self.add(cp(expression))
+        // We're gonna assume that any other expression is a bare expression in C++
+        _ => match &_self.context {
+          Context::ReturnStmt => _self.addln(format!("return {};", cp(expression))),
+          Context::LetBinding(_) => {
+            _self.appendln(format!(" = {};", cp(expression)));
           }
-        }
+          Context::LetBindingResult(var_name) => {
+            let var_name = var_name.clone();
+            _self.addln(format!("{} = {};", var_name, cp(expression)));
+          }
+          _ => _self.add(cp(expression)),
+        },
       }
       Ok(())
     });
@@ -347,4 +393,55 @@ where
   T: quote::ToTokens,
 {
   quote::quote!(#x).to_string()
+}
+
+fn is_else_clause_simple_ternary_clause(
+  else_branch: &Option<(syn::token::Else, Box<syn::Expr>)>,
+) -> bool {
+  if let Some((_, expression)) = else_branch {
+    match &**expression {
+      syn::Expr::If(if_expression) => is_if_simple_ternary(if_expression),
+      syn::Expr::Block(syn::ExprBlock { block, .. }) => is_block_simple_ternary_clause(block),
+      // This never happens
+      _ => false,
+    }
+  } else {
+    true
+  }
+}
+
+fn is_block_simple_ternary_clause(block: &syn::Block) -> bool {
+  let syn::Block { stmts, .. } = block;
+  if stmts.len() != 1 {
+    return false;
+  }
+  return is_stmt_simple_expr(stmts.first().unwrap());
+}
+
+fn is_stmt_simple_expr(statement: &syn::Stmt) -> bool {
+  match statement {
+    syn::Stmt::Expr(expression) => is_expr_simple_expr(expression),
+    _ => false,
+  }
+}
+
+fn is_expr_simple_expr(expression: &syn::Expr) -> bool {
+  match expression {
+    syn::Expr::ForLoop(_) => false,
+    syn::Expr::While(_) => false,
+    syn::Expr::Block(_) => false,
+    syn::Expr::Return(_) => false,
+    syn::Expr::If(if_expression) => is_if_simple_ternary(if_expression),
+    // We're gonna assume that any other expression is a bare expression in C++
+    _ => true,
+  }
+}
+
+fn is_if_simple_ternary(expression: &syn::ExprIf) -> bool {
+  let syn::ExprIf {
+    then_branch,
+    else_branch,
+    ..
+  } = expression;
+  is_block_simple_ternary_clause(then_branch) && is_else_clause_simple_ternary_clause(else_branch)
 }

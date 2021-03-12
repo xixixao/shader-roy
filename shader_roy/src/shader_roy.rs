@@ -102,7 +102,7 @@ fn main() -> Result<()> {
 
     let mut shader_file_path = shader_file_path_arg::get_path()?;
     let mut shader_files_watcher = ShaderFilesWatcher::new(std::time::Duration::from_secs(1))?;
-    shader_files_watcher.watch(&shader_file_path)?;
+    shader_files_watcher.watch_directory(&shader_file_path)?;
     let cli_commands_watcher = CLICommandsWatcher::new();
     let mut pipeline_state: Option<RenderPipelineState> = None;
     let mut frame_rate_reporter = FrameRateReporter::new();
@@ -148,15 +148,18 @@ fn main() -> Result<()> {
                         match cli_commands_watcher.try_recv() {
                             Some(CLICommand::Pause) => {
                                 input_computer.toggle_paused();
+                                CLICommandsWatcher::print_prompt();
                             }
                             Some(CLICommand::Restart) => {
                                 input_computer.reset();
+                                CLICommandsWatcher::print_prompt();
                             }
                             Some(CLICommand::Run(new_path)) => {
                                 shader_file_path =
                                     shader_file_path_arg::get_path_for_argument(&new_path)?;
-                                shader_files_watcher.watch(&shader_file_path)?;
+                                shader_files_watcher.watch_directory(&shader_file_path)?;
                                 pipeline_state = None;
+                                run_error = None;
                                 input_computer.reset();
                             }
                             None => {}
@@ -222,6 +225,7 @@ fn main() -> Result<()> {
             })();
             if let Err(err) = res {
                 println!("{:?}", err);
+                CLICommandsWatcher::print_instructions();
                 run_error = Some(());
             }
         });
@@ -250,7 +254,6 @@ impl CLICommandsWatcher {
                     continue;
                 }
             };
-            Self::print_prompt();
             tx.send(event).unwrap();
         });
 
@@ -474,14 +477,13 @@ impl ShaderFilesWatcher {
         Ok(files_watcher)
     }
 
-    fn watch(&mut self, path: &std::path::Path) -> Result<()> {
+    fn watch_directory(&mut self, path: &std::path::Path) -> Result<()> {
         use notify::Watcher;
         if let Some(watched_path) = &self.watched_path {
             let _ = self.watcher.unwatch(watched_path);
-        } else {
-            self.start_watching(path)?;
-            self.watched_path = Some(path.to_owned());
         }
+        self.start_watching(path.parent().unwrap())?;
+        self.watched_path = Some(path.to_owned());
         Ok(())
     }
 
