@@ -23,7 +23,7 @@ Why Rust for the shader source? Better syntax, better editor integration and bec
 
 In general you will write Rust that closely resembles the C++ Metal Shading Language API, except for a few differences.
 
-The INPUT struct is documented in [shader_roy_metal_sl_interface](shader_roy_metal_sl_interface/src/shader_roy_metal_sl_interface.rs).
+The `INPUT` struct is documented in [shader_roy_metal_sl_interface](shader_roy_metal_sl_interface/src/shader_roy_metal_sl_interface.rs).
 
 <table>
 <tr>
@@ -43,7 +43,7 @@ float foo() {
 </td>
 <td>
 
-All the standard types from MSL are capitalized to follow Rust conventions.
+All the standard types from MSL are capitalized to follow Rust conventions, except for `bool`.
 
 ```rust
 fn foo() -> Float {
@@ -95,8 +95,8 @@ auto foo = pos.yyxy; // float4(2.0, 2.0, 1.0, 2.0)
 In Rust you need to call these as methods:
 
 ```rust
-let pos = float2(1.0, 2.0);
-let foo = pos.yyxy(); // float4(2.0, 2.0, 1.0, 2.0)
+let pos = (1.0, 2.0).float2();
+let foo = pos.yyxy(); // (2.0, 2.0, 1.0, 2.0).float4()
 ```
 
 </td>

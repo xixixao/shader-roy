@@ -23,13 +23,19 @@ pub struct Input {
   pub year_month_day_tz: Float4,
 }
 
+// The values here are dummy values for type checking, real values are passed at runtime.
 pub const INPUT: Input = Input {
-  window_size: float2(0.0, 0.0),
-  window_position: float2(0.0, 0.0),
-  cursor_position: float2(0.0, 0.0),
+  window_size: Float2 { x: 0.0, y: 0.0 },
+  window_position: Float2 { x: 0.0, y: 0.0 },
+  cursor_position: Float2 { x: 0.0, y: 0.0 },
   is_cursor_inside_window: false,
   elapsed_time_secs: 0.0,
   elapsed_time_since_last_frame_secs: 0.0,
   frame_count: 0.0,
-  year_month_day_tz: float4(0.0, 0.0, 0.0, 0.0),
+  year_month_day_tz: Float4 {
+    x: 1970.0,
+    y: 12.0,
+    z: 24.0,
+    w: 1.0,
+  },
 };

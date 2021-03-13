@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+//! Provides type definitions for the Metal Standard Library, as if using `<metal_stdlib>`.
 
 mod access;
 mod common;
@@ -15,11 +15,3 @@ pub use generic::*;
 pub use geometric::*;
 pub use math::*;
 pub use types::*;
-
-#[derive(Copy, Clone)]
-pub struct Input {
-  /// Window size in physical units (at the native resolution of the display device)
-  pub window_size: Float2,
-  /// Time since starting the program, in fractions of seconds.
-  pub elapsed_time_secs: Float,
-}

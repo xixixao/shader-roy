@@ -5,11 +5,11 @@ use shader_roy_metal_sl_interface::*;
 
 pub fn pixel_color(coordinates: Float2) -> Float4 {
   // project screen coordinate into world
-  let p: Float2 = screen_to_world(coordinates, INPUT.window_size);
+  let p = screen_to_world(coordinates, INPUT.window_size);
   // signed distance for scene
-  let sd: Float = sdf(p);
+  let sd = sdf(p);
   // compute signed distance to a colour
-  let col: Float3 = shade(sd);
+  let col = shade(sd);
   (col, 1.0).float4()
 }
 
@@ -17,10 +17,10 @@ fn sdf(p: Float2) -> Float {
   // Example of the helpers
   op_blend(
     op_u(
-      sd_circle(p, float2(-0.2, 0.3), 0.2),
-      sd_circle(p, float2(-0.5, 0.3), 0.3),
+      sd_circle(p, (-0.2, 0.3).float2(), 0.2),
+      sd_circle(p, (-0.5, 0.3).float2(), 0.3),
     ),
-    sd_box(p, float2(0.2, 0.3), 0.3.float2()),
+    sd_box(p, (0.2, 0.3).float2(), 0.3.float2()),
   )
 }
 
@@ -68,10 +68,10 @@ fn shade(sd: Float) -> Float3 {
   let max_dist: Float = 2.0;
   let pal_col: Float3 = palette(
     (0.5 - sd * 0.4).clamped(-max_dist, max_dist),
-    float3(0.3, 0.3, 0.0),
-    float3(0.8, 0.8, 0.1),
-    float3(0.9, 0.7, 0.0),
-    float3(0.3, 0.9, 0.8),
+    (0.3, 0.3, 0.0).float3(),
+    (0.8, 0.8, 0.1).float3(),
+    (0.9, 0.7, 0.0).float3(),
+    (0.3, 0.9, 0.8).float3(),
   );
 
   let mut col: Float3 = pal_col;

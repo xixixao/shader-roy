@@ -1,3 +1,5 @@
+//! Type definitions for `<metal_common>`.
+
 use super::*;
 
 use std::ops::*;

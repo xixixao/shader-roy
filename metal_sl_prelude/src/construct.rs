@@ -1,39 +1,30 @@
 use super::*;
 
-pub const fn float2(x: f32, y: f32) -> Float2 {
-  Float2 { x, y }
-}
-
-pub const fn float3(x: f32, y: f32, z: f32) -> Float3 {
-  Float3 { x, y, z }
-}
-
-pub const fn float4(x: f32, y: f32, z: f32, w: f32) -> Float4 {
-  Float4 { x, y, z, w }
-}
-
 prelude_macros::implement_constructors! {
-  Float2 => {
-    (all: Float),
-    (x: Float, y: Float),
-    (fr: Float2),
-  },
-  Float3 => {
-    (all: Float),
-    (x: Float, y: Float, z: Float),
-    (x: Float, b: Float2),
-    (a: Float2, z: Float),
-    (fr: Float3),
-  },
-  Float4 => {
-    (all: Float),
-    (x: Float, y: Float, z: Float, w: Float),
-    (a: Float2, b: Float2),
-    (a: Float2, z: Float, w: Float),
-    (x: Float, y: Float, c: Float2),
-    (x: Float, b: Float2, c: Float),
-    (a: Float3, w: Float),
-    (x: Float, b: Float3),
-    (fr: Float4),
-  },
+  [Bool, Char, UChar, Short, UShort, Int, UInt, Long, ULong, Half, Float],
+  {
+    Type2 => {
+      (all: Type),
+      (x: Type, y: Type),
+      (fr: Type2),
+    },
+    Type3 => {
+      (all: Type),
+      (x: Type, y: Type, z: Type),
+      (x: Type, b: Type2),
+      (a: Type2, z: Type),
+      (fr: Type3),
+    },
+    Type4 => {
+      (all: Type),
+      (x: Type, y: Type, z: Type, w: Type),
+      (a: Type2, b: Type2),
+      (a: Type2, z: Type, w: Type),
+      (x: Type, y: Type, c: Type2),
+      (x: Type, b: Type2, c: Type),
+      (a: Type3, w: Type),
+      (x: Type, b: Type3),
+      (fr: Type4),
+    },
+  }
 }
