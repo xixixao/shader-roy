@@ -2,6 +2,8 @@
 
 ShaderToy clone in Rust, currently supporting MacOS.
 
+[![Demo Youtube Video](https://img.youtube.com/vi/FkOE-V9dh-U/maxresdefault.jpg)](https://www.youtube.com/watch?v=FkOE-V9dh-U)
+
 ## Features
 
 1. `cargo run <rust project dir>` displays a single macOS window filled with a [Metal](https://developer.apple.com/metal/) framework [fragment shader](https://developer.apple.com/documentation/metal/using_a_render_pipeline_to_render_primitives#3682806).
