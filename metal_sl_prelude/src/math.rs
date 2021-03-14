@@ -15,19 +15,19 @@ impl<T: Vector<Float>> ComponentWiseMath for T {
   }
 }
 
-pub trait MinMax<V = Self, R = V>: Sized {
-  fn min(self, b: V) -> R;
-  fn max(self, b: V) -> R;
+pub trait MinMax<TOther = Self, TResult = TOther>: Sized {
+  fn min(self, b: TOther) -> TResult;
+  fn max(self, b: TOther) -> TResult;
 }
 
-impl<T, V, R> MinMax<V, R> for T
+impl<TSelf, TOther, TResult> MinMax<TOther, TResult> for TSelf
 where
-  (T, V): Map2<Float, R>,
+  (TSelf, TOther): Map2<Float, TResult>,
 {
-  fn min(self, b: V) -> R {
+  fn min(self, b: TOther) -> TResult {
     (self, b).map2(vek::ops::partial_min)
   }
-  fn max(self, b: V) -> R {
+  fn max(self, b: TOther) -> TResult {
     (self, b).map2(vek::ops::partial_max)
   }
 }

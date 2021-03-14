@@ -5,4 +5,5 @@ members = [
     "examples/mandelbrot",
     "examples/raymarching_eyes",
     "examples/two_dimensional_sdf",
+    "examples/simple",
 ]
