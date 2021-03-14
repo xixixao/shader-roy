@@ -83,6 +83,7 @@ vector constructors (`float4` etc.) can take arbitrary number of vector/scalar a
 ```cpp
 auto x = float2(1.0);
 float4(x, x);
+
 uint2(0, 0);
 ```
 
@@ -94,6 +95,7 @@ In Rust, these follow the type names. You need to call these as methods.
 ```rust
 let x = 1.0.vec2();
 (x, x).vec4();
+
 vec2u32(0, 0);
 ```
 
@@ -108,7 +110,8 @@ vector component selection constructors (`xxy` etc.) allows permutation and/or r
 
 ```cpp
 auto pos = float2(1.0, 2.0);
-auto foo = pos.yyxy; // float4(2.0, 2.0, 1.0, 2.0)
+auto foo = pos.yyxy;
+// => float4(2.0, 2.0, 1.0, 2.0)
 ```
 
 </td>
@@ -118,7 +121,8 @@ In Rust you need to call these as methods:
 
 ```rust
 let pos = (1.0, 2.0).vec2();
-let foo = pos.yyxy(); // (2.0, 2.0, 1.0, 2.0).vec4()
+let foo = pos.yyxy();
+// => (2.0, 2.0, 1.0, 2.0).vec4()
 ```
 
 </td>
@@ -135,7 +139,7 @@ min(x, y);
 </td>
 <td>
 
-Math, geometric, common functions need to be called as methods
+Math, geometric and common functions need to be called as methods
 
 ```rust
 x.min(y)
@@ -153,7 +157,7 @@ clamp(x, 0.3, 0.4);
 length(x);
 length_squared(x);
 normalize(x);
-faceforward(x, incident, reference);
+faceforward(x, incident, ref);
 reflect(x, normal);
 refract(x, normal, eta);
 fmin(x, y);
@@ -170,7 +174,7 @@ x.clamped(0.3, 0.4);
 x.magnitude();
 x.magnitude_squared();
 x.normalized();
-x.face_forward(incident, reference);
+x.face_forward(incident, ref);
 x.reflected(normal);
 x.refracted(normal, eta);
 x.min(y);
