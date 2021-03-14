@@ -4,28 +4,24 @@ pub fn make_rust_ast_msl_compatible(mut rust_ast: syn::File) -> syn::File {
   rust_ast
 }
 
-const MSL_TYPES: [&str; 3] = ["Float", "Int", "Uint"];
+const DEFAULT_GENERIC_TYPE_ARG: &str = "f32";
+const GENERIC_TYPE_PREFIX: &str = "Vec";
+const GENERIC_METHOD_PREFIX: &str = "vec";
 
 lazy_static::lazy_static! {
-  static ref LOWER_CASED_TYPES: regex::RegexSet = regex::RegexSet::new(
-    MSL_TYPES
-      .iter()
-      .map(|type_name| format!(r"^{}\d?$", type_name)),
-  )
-  .unwrap();
-}
+  static ref RUST_TO_METAL_TYPES: std::collections::HashMap<&'static str, &'static str> = maplit::hashmap![
+    "i8" => "char",
+    "u8" => "uchar",
+    "i16" => "short",
+    "u16" => "ushort",
+    "i32" => "int",
+    "u32" => "uint",
+    "i32" => "long",
+    "i32" => "ulong",
+    "f16" => "half",
+    "f32" => "float",
+  ];
 
-lazy_static::lazy_static! {
-  static ref CONSTRUCTOR_METHODS: regex::RegexSet = regex::RegexSet::new(
-    MSL_TYPES
-      .iter()
-      .map(|type_name| voca_rs::case::lower_first(type_name))
-      .map(|type_name| format!(r"^{}\d$", type_name)),
-  )
-  .unwrap();
-}
-
-lazy_static::lazy_static! {
   static ref ACCESS_METHODS: regex::Regex = regex::Regex::new(r"^[xywz]{1,4}$").unwrap();
 }
 
@@ -77,18 +73,27 @@ impl syn::visit_mut::VisitMut for AstAdapter {
         syn::parse_quote!(
           #receiver.#method
         )
-      } else if CONSTRUCTOR_METHODS.is_match(&method_name) {
+      } else if let Some(arity_and_type_suffix) = method_name.strip_prefix(GENERIC_METHOD_PREFIX) {
+        let type_name = &arity_and_type_suffix[1..];
+        let new_type_name = RUST_TO_METAL_TYPES
+          .get::<str>(if type_name == "" {
+            DEFAULT_GENERIC_TYPE_ARG
+          } else {
+            type_name
+          })
+          .unwrap();
+        let new_method = quote::format_ident!("{}{}", new_type_name, arity_and_type_suffix[0..1]);
         if let syn::Expr::Tuple(syn::ExprTuple {
           elems: unwrapped_args,
           ..
         }) = &**receiver
         {
           syn::parse_quote!(
-            #method(#unwrapped_args)
+            #new_method(#unwrapped_args)
           )
         } else {
           syn::parse_quote!(
-            #method(#receiver)
+            #new_method(#receiver)
           )
         }
       } else if METHODS_WITH_RECEIVER_LAST.is_match(&method_name) {
@@ -115,12 +120,28 @@ impl syn::visit_mut::VisitMut for AstAdapter {
     syn::visit_mut::visit_expr_mut(self, node);
   }
 
+  // Convert scalar/vector types
+  // `scalar` or ```Vec`d`<`scalar`>```
   fn visit_path_mut(&mut self, node: &mut syn::Path) {
-    if let Some(ident) = node.get_ident() {
-      let type_name = ident.to_string();
-      if LOWER_CASED_TYPES.is_match(&type_name) {
-        let new_name = voca_rs::case::lower_first(&type_name);
-        let new_type = syn::Ident::new(&new_name, proc_macro2::Span::call_site());
+    let (type_name, type_args) = {
+      let mut path_segments_iter = node.segments.iter();
+      let ty = path_segments_iter.next().unwrap();
+      let arg_list = if let syn::PathArguments::AngleBracketed(args) = &ty.arguments {
+        Some(quote::quote!(#args).to_string())
+      } else {
+        None
+      };
+      (ty.ident.to_string(), arg_list)
+    };
+    if let Some(new_type_name) = RUST_TO_METAL_TYPES.get::<str>(&type_name) {
+      let new_type = quote::format_ident!("{}", new_type_name);
+      *node = syn::parse_quote!(#new_type);
+    }
+    if let Some(arity_suffix) = type_name.strip_prefix(GENERIC_TYPE_PREFIX) {
+      if let Some(new_type_name) =
+        RUST_TO_METAL_TYPES.get::<str>(&type_args.as_deref().unwrap_or(DEFAULT_GENERIC_TYPE_ARG))
+      {
+        let new_type = quote::format_ident!("{}{}", new_type_name, arity_suffix);
         *node = syn::parse_quote!(#new_type);
       }
     }

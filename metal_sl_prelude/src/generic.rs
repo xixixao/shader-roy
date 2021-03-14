@@ -16,17 +16,17 @@ pub trait Vector<T> {
 }
 
 prelude_macros::implement! {
-  Vector<Float> > Float2, Float3, Float4 {
+  Vector<f32> > Vec2, Vec3, Vec4 {
     fn map<F>(self, f: F) -> Self
     where
-      F: FnMut(Float) -> Float
+      F: FnMut(f32) -> f32
     {
       self.map(f)
     }
 
     fn map2<F>(self, b: Self, f: F) -> Self
     where
-      F: FnMut(Float, Float) -> Float {
+      F: FnMut(f32, f32) -> f32 {
         self.map2(b, f)
       }
   }
@@ -38,19 +38,19 @@ pub trait Map<T> {
     F: FnMut(T) -> T;
 }
 
-impl Map<Float> for Float {
+impl Map<f32> for f32 {
   fn map<F>(self, mut f: F) -> Self
   where
-    F: FnMut(Float) -> Float,
+    F: FnMut(f32) -> f32,
   {
     f(self)
   }
 }
 
-impl<V: Vector<Float>> Map<Float> for V {
+impl<V: Vector<f32>> Map<f32> for V {
   fn map<F>(self, f: F) -> Self
   where
-    F: FnMut(Float) -> Float,
+    F: FnMut(f32) -> f32,
   {
     self.map(f)
   }
@@ -62,38 +62,38 @@ pub trait Map2<T, R>: Sized {
     F: FnMut(T, T) -> T;
 }
 
-impl Map2<Float, Float> for (Float, Float) {
-  fn map2<F>(self, mut f: F) -> Float
+impl Map2<f32, f32> for (f32, f32) {
+  fn map2<F>(self, mut f: F) -> f32
   where
-    F: FnMut(Float, Float) -> Float,
+    F: FnMut(f32, f32) -> f32,
   {
     f(self.0, self.1)
   }
 }
 
-impl<T: Vector<Float>> Map2<Float, T> for (T, T) {
+impl<T: Vector<f32>> Map2<f32, T> for (T, T) {
   fn map2<F>(self, f: F) -> T
   where
-    F: FnMut(Float, Float) -> Float,
+    F: FnMut(f32, f32) -> f32,
   {
     self.0.map2(self.1, f)
   }
 }
 
-impl<T: Vector<Float>> Map2<Float, T> for (T, Float) {
+impl<T: Vector<f32>> Map2<f32, T> for (T, f32) {
   fn map2<F>(self, mut f: F) -> T
   where
-    F: FnMut(Float, Float) -> Float,
+    F: FnMut(f32, f32) -> f32,
   {
     let (a, b) = self;
     a.map(|x| f(x, b))
   }
 }
 
-impl<T: Vector<Float>> Map2<Float, T> for (Float, T) {
+impl<T: Vector<f32>> Map2<f32, T> for (f32, T) {
   fn map2<F>(self, mut f: F) -> T
   where
-    F: FnMut(Float, Float) -> Float,
+    F: FnMut(f32, f32) -> f32,
   {
     let (a, b) = self;
     b.map(|x| f(a, x))

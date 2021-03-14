@@ -5,7 +5,7 @@ pub trait ComponentWiseMath {
   fn cos(self) -> Self;
 }
 
-impl<T: Vector<Float>> ComponentWiseMath for T {
+impl<T: Vector<f32>> ComponentWiseMath for T {
   fn abs(self) -> Self {
     self.map(|x| x.abs())
   }
@@ -22,7 +22,7 @@ pub trait MinMax<TOther = Self, TResult = TOther>: Sized {
 
 impl<TSelf, TOther, TResult> MinMax<TOther, TResult> for TSelf
 where
-  (TSelf, TOther): Map2<Float, TResult>,
+  (TSelf, TOther): Map2<f32, TResult>,
 {
   fn min(self, b: TOther) -> TResult {
     (self, b).map2(vek::ops::partial_min)
@@ -39,7 +39,7 @@ pub trait Math<V = Self, R = V>: Sized {
 
 impl<T, V, R> Math<V, R> for T
 where
-  (T, V): Map2<Float, R>,
+  (T, V): Map2<f32, R>,
 {
   fn pow(self, b: V) -> R {
     (self, b).map2(|a, b| a.powf(b))

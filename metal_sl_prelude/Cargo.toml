@@ -11,3 +11,4 @@ path = "src/metal_sl_prelude.rs"
 prelude_macros = { path="prelude_macros" }
 vek = "0.13.0"
 num = "0.3.1"
+half = "1.7.1"

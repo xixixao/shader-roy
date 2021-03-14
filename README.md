@@ -31,7 +31,7 @@ The `INPUT` struct is documented in [shader_roy_metal_sl_interface](shader_roy_m
 </tr>
 
 <tr>
-<td> Types </td>
+<td> Scalar Types </td>
 <td>
 
 ```cpp
@@ -43,12 +43,32 @@ float foo() {
 </td>
 <td>
 
-All the standard types from MSL are capitalized to follow Rust conventions, except for `bool`.
+Use standard Rust types that correspond to the Metal types.
 
 ```rust
-fn foo() -> Float {
+fn foo() -> f32 {
   3.0
 }
+```
+
+</td>
+</tr>
+
+<tr>
+<td> Vector Types </td>
+<td>
+
+```cpp
+void foo(float3 a, uint2 b) {}
+```
+
+</td>
+<td>
+
+Use the generic `Vec` type. Its default type argument is `f32`, for convenience.
+
+```rust
+fn foo(a: Vec3, b: Vec2<u32>) {}
 ```
 
 </td>
@@ -62,17 +82,19 @@ vector constructors (`float4` etc.) can take arbitrary number of vector/scalar a
 
 ```cpp
 auto x = float2(1.0);
-float4(x, x)
+float4(x, x);
+uint2(0, 0);
 ```
 
 </td>
 <td>
 
-In Rust you need to call these as methods:
+In Rust, these follow the type names. You need to call these as methods.
 
 ```rust
-let x = 1.0.float2();
-(x, x).float4()
+let x = 1.0.vec2();
+(x, x).vec4();
+vec2u32(0, 0);
 ```
 
 </td>
@@ -95,8 +117,8 @@ auto foo = pos.yyxy; // float4(2.0, 2.0, 1.0, 2.0)
 In Rust you need to call these as methods:
 
 ```rust
-let pos = (1.0, 2.0).float2();
-let foo = pos.yyxy(); // (2.0, 2.0, 1.0, 2.0).float4()
+let pos = (1.0, 2.0).vec2();
+let foo = pos.yyxy(); // (2.0, 2.0, 1.0, 2.0).vec4()
 ```
 
 </td>
@@ -189,12 +211,16 @@ x.step(0.3);
 ### Modules
 
 Right now only modules in the same directory as the main file will be watched.
-Only files in the same directory are supported for `mod <name>`s, not `<name>/mod.rs`
+Only files in the same directory are supported for `mod <name>`s, `<name>/mod.rs` is not supported.
 There is no support for `path` attribute on `mod`s.
 
 ### Let bindings
 
 Variables cannot be redeclared. (_for now_)
+
+### Constructors
+
+In Rust we could use a single generic `vec2` constructor for all `Vec2`s. But this would require actually using `rustc` to compile the constructors to the concrete Metal C++ constructors. To keep things simpler, the Rust bindings here require specifying the constructors directly (`vec2bool` -> `bool2`).
 
 ## Development
 

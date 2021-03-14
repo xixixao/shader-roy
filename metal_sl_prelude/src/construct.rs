@@ -1,30 +1,41 @@
 use super::*;
 
 prelude_macros::implement_constructors! {
-  [Bool, Char, UChar, Short, UShort, Int, UInt, Long, ULong, Half, Float],
+  [i8, u8, i16, u16 , i32, u32, i64, u64, f16, f32], // no f16
   {
-    Type2 => {
-      (all: Type),
-      (x: Type, y: Type),
-      (fr: Type2),
+    Vec2 => {
+      (all: Num),
+      (x: Num, y: Num),
+      (fr: Vec2),
     },
-    Type3 => {
-      (all: Type),
-      (x: Type, y: Type, z: Type),
-      (x: Type, b: Type2),
-      (a: Type2, z: Type),
-      (fr: Type3),
+    Vec3 => {
+      (all: Num),
+      (x: Num, y: Num, z: Num),
+      (x: Num, b: Vec2),
+      (a: Vec2, z: Num),
+      (fr: Vec3),
     },
-    Type4 => {
-      (all: Type),
-      (x: Type, y: Type, z: Type, w: Type),
-      (a: Type2, b: Type2),
-      (a: Type2, z: Type, w: Type),
-      (x: Type, y: Type, c: Type2),
-      (x: Type, b: Type2, c: Type),
-      (a: Type3, w: Type),
-      (x: Type, b: Type3),
-      (fr: Type4),
+    Vec4 => {
+      (all: Num),
+      (x: Num, y: Num, z: Num, w: Num),
+      (a: Vec2, b: Vec2),
+      (a: Vec2, z: Num, w: Num),
+      (x: Num, y: Num, c: Vec2),
+      (x: Num, b: Vec2, c: Num),
+      (a: Vec3, w: Num),
+      (x: Num, b: Vec3),
+      (fr: Vec4),
     },
   }
+}
+
+#[test]
+fn test() {
+  1.0.vec3();
+  (1.0, 2.0, 3.0).vec3();
+  (1.0.vec2(), 3.0).vec3();
+
+  1.vec3i32();
+  (1, 2, 3).vec3i32();
+  (1.vec2i32(), 3).vec3i32();
 }
