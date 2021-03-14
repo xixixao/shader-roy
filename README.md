@@ -14,8 +14,8 @@ ShaderToy clone in Rust, currently supporting MacOS.
 ## Instructions
 
 1. clone this repo
-2. run `cargo run examples/raymarching_eyes`
-3. edit `example_raymarching/raymarching_eyes.rs`
+2. run `cargo run raymarching_eyes`
+3. edit `examples/raymarching_eyes.rs`
 
 Why Rust for the shader source? Better syntax, better editor integration and because it's a fun hack. It should feel exactly like writing Rust (which feels awesome!). Unlike in ShaderToy the Rust typechecker warns immediately about most errors one might make.
 

@@ -9,38 +9,32 @@ const GENERIC_TYPE_PREFIX: &str = "Vec";
 const GENERIC_METHOD_PREFIX: &str = "vec";
 
 lazy_static::lazy_static! {
-  static ref RUST_TO_METAL_TYPES: std::collections::HashMap<&'static str, &'static str> = maplit::hashmap![
-    "i8" => "char",
-    "u8" => "uchar",
-    "i16" => "short",
-    "u16" => "ushort",
-    "i32" => "int",
-    "u32" => "uint",
-    "i32" => "long",
-    "i32" => "ulong",
-    "f16" => "half",
-    "f32" => "float",
-  ];
-
+  static ref RUST_TO_METAL_TYPES: std::collections::HashMap<&'static str, &'static str> =
+    maplit::hashmap![
+      "i8" => "char",
+      "u8" => "uchar",
+      "i16" => "short",
+      "u16" => "ushort",
+      "i32" => "int",
+      "u32" => "uint",
+      "i32" => "long",
+      "i32" => "ulong",
+      "f16" => "half",
+      "f32" => "float",
+    ];
   static ref ACCESS_METHODS: regex::Regex = regex::Regex::new(r"^[xywz]{1,4}$").unwrap();
-}
-
-lazy_static::lazy_static! {
   static ref RENAMED_METHODS: std::collections::HashMap<&'static str, &'static str> =
-    [
-      ("clamped", "clamp"),
-      ("magnitude", "length"),
-      ("magnitude_squared", "length_squared"),
-      ("face_forward", "faceforward"),
-      ("normalized", "normalize"),
-      ("reflected", "reflect"),
-      ("refracted", "refract"),
-      ("min", "fmin"),
-      ("max", "fmax"),
-    ].iter().cloned().collect();
-}
-
-lazy_static::lazy_static! {
+    maplit::hashmap![
+      "clamped" => "clamp",
+      "magnitude" => "length",
+      "magnitude_squared" => "length_squared",
+      "face_forward" => "faceforward",
+      "normalized" => "normalize",
+      "reflected" => "reflect",
+      "refracted" => "refract",
+      "min" => "fmin",
+      "max" => "fmax",
+    ];
   static ref METHODS_WITH_RECEIVER_LAST: regex::RegexSet = regex::RegexSet::new(
     ["mix", "smoothstep", "step"]
       .iter()
@@ -61,11 +55,9 @@ impl syn::visit_mut::VisitMut for AstAdapter {
         ..
       } = expr;
 
-      RENAMED_METHODS.iter().for_each(|(old, new)| {
-        if method == old {
-          *method = quote::format_ident!("{}", new);
-        }
-      });
+      if let Some(new_method_name) = RENAMED_METHODS.get::<str>(&method.to_string()) {
+        *method = quote::format_ident!("{}", new_method_name);
+      }
 
       let method_name = method.to_string();
 

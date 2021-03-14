@@ -1,6 +1,11 @@
 use anyhow::{anyhow, Context, Result};
 use path_absolutize::Absolutize;
 
+lazy_static::lazy_static! {
+  pub static ref ROOT_PATH: std::path::PathBuf =
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+}
+
 pub fn get_path() -> Result<std::path::PathBuf> {
   let args: Vec<String> = std::env::args().collect();
   get_path_for_argument(args.get(1).ok_or_else(|| {
@@ -22,10 +27,15 @@ pub fn get_path_for_argument(argument: &str) -> Result<std::path::PathBuf> {
 }
 
 fn path_or_lib_src(arg_path: &std::path::PathBuf) -> Result<std::path::PathBuf> {
-  let path_info = std::fs::metadata(arg_path)
+  let (resolved_path, path_info) = std::fs::metadata(arg_path)
+    .map(|info| (arg_path.to_owned(), info))
+    .or_else(|_| {
+      let example_path = ROOT_PATH.join("../examples").join(arg_path);
+      std::fs::metadata(&example_path).map(|info| (example_path, info))
+    })
     .with_context(|| "File path argument doesn\'t match an existing directory or file.")?;
   Ok(if path_info.is_dir() {
-    let cargo_manifest_path = &arg_path.join("Cargo.toml");
+    let cargo_manifest_path = &resolved_path.join("Cargo.toml");
     let cargo_manifest = std::fs::read_to_string(cargo_manifest_path).with_context(|| {
       "File path matches a directory, but the directory is missing the expected Cargo.toml file."
     })?;
@@ -36,7 +46,7 @@ fn path_or_lib_src(arg_path: &std::path::PathBuf) -> Result<std::path::PathBuf> 
       )
     })?;
     if let Some(path) = parsed_cargo_manifest["lib"]["path"].as_str() {
-      let source_path = arg_path.join(path);
+      let source_path = resolved_path.join(path);
       std::fs::metadata(&source_path).with_context(|| {
         format!(
           "Could not find the source file at {:?} based on [lib][path] {} specified in Cargo.toml file at {:?}",
@@ -47,9 +57,9 @@ fn path_or_lib_src(arg_path: &std::path::PathBuf) -> Result<std::path::PathBuf> 
       })?;
       source_path
     } else {
-      arg_path.join("src/lib.rs")
+      resolved_path.join("src/lib.rs")
     }
   } else {
-    arg_path.to_owned()
+    resolved_path
   })
 }
