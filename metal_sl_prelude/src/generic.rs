@@ -15,20 +15,51 @@ pub trait Vector<T> {
     F: FnMut(T, T) -> T;
 }
 
-prelude_macros::implement! {
-  Vector<f32> > Vec2, Vec3, Vec4 {
-    fn map<F>(self, f: F) -> Self
-    where
-      F: FnMut(f32) -> f32
-    {
-      self.map(f)
-    }
+impl<T> Vector<T> for Vec2<T> {
+  fn map<F>(self, f: F) -> Self
+  where
+    F: FnMut(T) -> T,
+  {
+    self.map(f)
+  }
 
-    fn map2<F>(self, b: Self, f: F) -> Self
-    where
-      F: FnMut(f32, f32) -> f32 {
-        self.map2(b, f)
-      }
+  fn map2<F>(self, b: Self, f: F) -> Self
+  where
+    F: FnMut(T, T) -> T,
+  {
+    self.map2(b, f)
+  }
+}
+
+impl<T> Vector<T> for Vec3<T> {
+  fn map<F>(self, f: F) -> Self
+  where
+    F: FnMut(T) -> T,
+  {
+    self.map(f)
+  }
+
+  fn map2<F>(self, b: Self, f: F) -> Self
+  where
+    F: FnMut(T, T) -> T,
+  {
+    self.map2(b, f)
+  }
+}
+
+impl<T> Vector<T> for Vec4<T> {
+  fn map<F>(self, f: F) -> Self
+  where
+    F: FnMut(T) -> T,
+  {
+    self.map(f)
+  }
+
+  fn map2<F>(self, b: Self, f: F) -> Self
+  where
+    F: FnMut(T, T) -> T,
+  {
+    self.map2(b, f)
   }
 }
 

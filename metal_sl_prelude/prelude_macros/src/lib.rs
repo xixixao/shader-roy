@@ -16,7 +16,7 @@ macro_rules! implement_constructors_for_type {
   ($type_name:ident, {$($type:ident => $set:tt),*$(,)?}) => {
     $(
       $crate::prelude_proc_macros::define_trait! { $type_name $type }
-      $crate::implement_trait! {
+      $crate::implement_constructor_trait! {
         $type_name: $type => $set
       }
     )*
@@ -24,10 +24,10 @@ macro_rules! implement_constructors_for_type {
 }
 
 #[macro_export]
-macro_rules! implement_trait {
+macro_rules! implement_constructor_trait {
   ($type_name:ident: $type:ident => {$($arg_list:tt),*$(,)?}) => {
     $(
-      $crate::implement_trait! {
+      $crate::implement_constructor_trait! {
         $type_name: $type => $arg_list
       }
     )*
@@ -46,19 +46,4 @@ macro_rules! implement_accessors {
       $crate::prelude_proc_macros::implement_accessors! { $type }
     )*
   };
-}
-
-#[macro_export]
-macro_rules! implement {
-  ($trait:path > $first_type:ty $(, $type:tt)* { $($implementation:item)* }) => {
-    impl $trait for $first_type {
-      $($implementation)*
-    }
-    $crate::implement! {
-      $trait > $($type),* {
-        $($implementation)*
-      }
-    }
-  };
-  ($trait:path > $_:tt) => {};
 }
