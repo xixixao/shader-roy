@@ -1,7 +1,7 @@
 use super::*;
 
 prelude_macros::implement_constructors! {
-  [i8, u8, i16, u16 , i32, u32, i64, u64, f16, f32], // no f16
+  [i8, u8, i16, u16 , i32, u32, i64, u64, f16, f32],
   {
     Vec2 => {
       (all: Num),
@@ -30,7 +30,7 @@ prelude_macros::implement_constructors! {
 }
 
 #[test]
-fn test() {
+fn test_constructors() {
   1.0.vec3();
   (1.0, 2.0, 3.0).vec3();
   (1.0.vec2(), 3.0).vec3();
@@ -38,4 +38,9 @@ fn test() {
   1.vec3i32();
   (1, 2, 3).vec3i32();
   (1.vec2i32(), 3).vec3i32();
+}
+
+// TODO: All constructors
+pub fn mat2(val: f32) -> Mat2 {
+  Mat2::broadcast_diagonal(val)
 }

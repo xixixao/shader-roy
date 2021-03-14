@@ -10,7 +10,7 @@ prelude_macros::implement_accessors! {
 }
 
 #[test]
-fn test() {
+fn test_accessors() {
   let _ = 1.0.vec3().x;
   1.0.vec3().xy();
   1.0.vec3().zyx();
